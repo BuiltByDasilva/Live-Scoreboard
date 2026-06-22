@@ -31,7 +31,8 @@
     "storage"
   ],
   "host_permissions": [
-    "https://site.api.espn.com/*"
+    "https://site.api.espn.com/*",
+    "https://kmtpuvtswatkilvkffqb.supabase.co/*"
   ],
   "side_panel": {
     "default_path": "sidepanel.html"

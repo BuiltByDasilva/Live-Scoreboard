@@ -8,9 +8,14 @@ const requiredFiles = [
   "sidepanel.html",
   "styles.css",
   "service-worker.js",
+  "supabase/functions/checkout/index.ts",
+  "supabase/functions/entitlements/index.ts",
+  "supabase/functions/stripe-webhook/index.ts",
+  "supabase/migrations/202606220001_create_monetization.sql",
   "src/app.js",
   "src/data.js",
   "src/live-data.js",
+  "src/monetization.js",
   "src/skins.js",
   "src/state.js",
   "src/toolbar.js"
@@ -37,16 +42,18 @@ for (const permission of expectedPermissions) {
 }
 
 const expectedHosts = [
-  "https://site.api.espn.com/*"
+  "https://site.api.espn.com/*",
+  "https://kmtpuvtswatkilvkffqb.supabase.co/*"
 ];
 
 if (JSON.stringify(manifest.host_permissions) !== JSON.stringify(expectedHosts)) {
-  throw new Error("Live-score host permissions must remain limited to the declared data provider.");
+  throw new Error("Host permissions must remain limited to the live-data and checkout providers.");
 }
 
 const dataModule = await import(path.join(root, "src/data.js"));
 const skinsModule = await import(path.join(root, "src/skins.js"));
 const liveDataModule = await import(path.join(root, "src/live-data.js"));
+const monetizationModule = await import(path.join(root, "src/monetization.js"));
 
 if (dataModule.TEAMS.length !== 48) {
   throw new Error(`Expected 48 teams, found ${dataModule.TEAMS.length}.`);
@@ -78,6 +85,46 @@ const html = fs.readFileSync(path.join(root, "sidepanel.html"), "utf8");
 for (const id of ["skinList", "skinSearch", "skinFilter", "themeStage"]) {
   if (!html.includes(`id="${id}"`)) {
     throw new Error(`Missing skins interface element: ${id}.`);
+  }
+}
+
+for (const id of ["purchaseStatus", "restoreButton"]) {
+  if (!html.includes(`id="${id}"`)) {
+    throw new Error(`Missing purchase interface element: ${id}.`);
+  }
+}
+
+const expectedOffers = {
+  skin_single: 99,
+  skin_five: 299,
+  skins_all_2026: 999,
+};
+
+for (const [sku, amountCents] of Object.entries(expectedOffers)) {
+  const offer = monetizationModule.getOffer(sku);
+  if (!offer || offer.amountCents !== amountCents || offer.currency !== "usd") {
+    throw new Error(`Invalid purchase offer: ${sku}.`);
+  }
+}
+
+const stateSource = fs.readFileSync(path.join(root, "src/state.js"), "utf8");
+if (!stateSource.includes('unlockedSkinIds: ["default"]')) {
+  throw new Error("Premium skins must not be pre-unlocked in the default state.");
+}
+
+const checkoutFunction = fs.readFileSync(path.join(root, "supabase/functions/checkout/index.ts"), "utf8");
+const webhookFunction = fs.readFileSync(path.join(root, "supabase/functions/stripe-webhook/index.ts"), "utf8");
+const monetizationMigration = fs.readFileSync(path.join(root, "supabase/migrations/202606220001_create_monetization.sql"), "utf8");
+
+for (const source of [checkoutFunction, webhookFunction]) {
+  if (!source.includes('apiVersion: "2026-02-25.clover"')) {
+    throw new Error("Stripe functions must use the current pinned API version.");
+  }
+}
+
+for (const requiredSql of ["purchase_entitlements", "purchase_events", "redeem_skin_credit", "apply_purchase_event"]) {
+  if (!monetizationMigration.includes(requiredSql)) {
+    throw new Error(`Monetization migration is missing ${requiredSql}.`);
   }
 }
 

@@ -5,8 +5,15 @@ import {
   loadLiveSnapshot,
   refreshLiveSnapshot,
 } from "./live-data.js";
+import { getCheckoutCopy, getOffer, PURCHASE_STATUS } from "./monetization.js";
 import { applySkin, getSkin, SKINS } from "./skins.js";
-import { loadState, setActiveSkin, setToolbarMatch, toggleWatchedMatch } from "./state.js";
+import {
+  loadState,
+  setActiveSkin,
+  setPurchaseStatus,
+  setToolbarMatch,
+  toggleWatchedMatch,
+} from "./state.js";
 
 const elements = {
   heroScore: document.querySelector("#heroScore"),
@@ -18,6 +25,8 @@ const elements = {
   skinSearch: document.querySelector("#skinSearch"),
   skinFilter: document.querySelector("#skinFilter"),
   themeStage: document.querySelector("#themeStage"),
+  purchaseStatus: document.querySelector("#purchaseStatus"),
+  restoreButton: document.querySelector("#restoreButton"),
   favoritesOnly: document.querySelector("#favoritesOnly"),
   refreshButton: document.querySelector("#refreshButton"),
   tabs: document.querySelectorAll(".tab"),
@@ -167,6 +176,8 @@ function renderThemeStage() {
   const skin = getDisplayedSkin();
   const isUnlocked = appState.unlockedSkinIds.includes(skin.id);
   const isActive = appState.activeSkinId === skin.id && !previewSkinId;
+  const offer = getOffer("skin_single");
+  const canUseCredit = !isUnlocked && appState.entitlementCache.credits > 0;
 
   const artwork = skin.id === "default"
     ? `<img class="theme-logo" src="assets/icon128.png" alt="Live Scoreboard 2026 icon">`
@@ -188,7 +199,8 @@ function renderThemeStage() {
       </div>
       <div class="theme-stage-actions">
         ${isUnlocked && !isActive ? `<button type="button" data-apply-skin="${skin.id}">Apply theme</button>` : ""}
-        ${!isUnlocked ? `<button type="button" data-buy-skin="${skin.id}" class="primary">Unlock $0.99</button>` : ""}
+        ${canUseCredit ? `<button type="button" data-redeem-skin="${skin.id}" class="primary">Use 1 skin credit</button>` : ""}
+        ${!isUnlocked && !canUseCredit ? `<button type="button" data-buy-skin="${skin.id}" class="primary">${getCheckoutCopy(offer.sku)}</button>` : ""}
         ${previewSkinId ? `<button type="button" data-cancel-preview>Back to active</button>` : ""}
         ${isActive ? `<span class="applied-state">Applied</span>` : ""}
       </div>
@@ -215,6 +227,7 @@ function renderSkins() {
     const isSelected = previewSkinId === skin.id;
     const isPreviewing = previewSkinId === skin.id && !isUnlocked;
     const isActive = appState.activeSkinId === skin.id && !previewSkinId;
+    const canUseCredit = !isUnlocked && appState.entitlementCache.credits > 0;
     const label = isPreviewing ? "Previewing" : isActive ? "Active" : isUnlocked ? "Apply" : "Preview";
     const action = isUnlocked ? "apply-skin" : "preview-skin";
 
@@ -236,11 +249,38 @@ function renderSkins() {
           <button class="skin-action ${isActive || isPreviewing ? "is-on" : ""}" type="button" data-${action}="${skin.id}">
             ${label}
           </button>
-          ${!isUnlocked ? `<button class="skin-price" type="button" data-buy-skin="${skin.id}" aria-label="Unlock ${skin.name} for $0.99">$0.99</button>` : `<span class="owned-label">Owned</span>`}
+          ${canUseCredit ? `<button class="skin-price" type="button" data-redeem-skin="${skin.id}" aria-label="Use one skin credit to unlock ${skin.name}">Use credit</button>` : ""}
+          ${!isUnlocked && !canUseCredit ? `<button class="skin-price" type="button" data-buy-skin="${skin.id}" aria-label="Unlock ${skin.name} for $0.99">$0.99</button>` : ""}
+          ${isUnlocked ? `<span class="owned-label">Owned</span>` : ""}
         </div>
       </article>
     `;
   }).join("") || `<div class="skin-empty"><strong>No themes found.</strong><span>Try another country or collection filter.</span></div>`;
+}
+
+function renderPurchaseStatus() {
+  if (!elements.purchaseStatus) return;
+
+  const entitlement = appState.entitlementCache;
+  const statusParts = [];
+
+  if (appState.purchaseStatus === PURCHASE_STATUS.pending) {
+    statusParts.push("Stripe checkout is open and waiting for payment.");
+  } else if (appState.purchaseStatus === PURCHASE_STATUS.paid) {
+    statusParts.push("Purchase received. Unlocks have been applied.");
+  } else if (appState.purchaseStatus === PURCHASE_STATUS.restored) {
+    statusParts.push("Purchases restored. Your unlocks are up to date.");
+  } else if (appState.purchaseStatus === PURCHASE_STATUS.error) {
+    statusParts.push("Checkout could not start. Try again or restore purchases later.");
+  } else {
+    statusParts.push("Secure checkout opens in Stripe. Purchases unlock automatically after payment.");
+  }
+
+  if (entitlement.credits > 0) {
+    statusParts.push(`${entitlement.credits} skin credit${entitlement.credits === 1 ? "" : "s"} remaining.`);
+  }
+
+  elements.purchaseStatus.textContent = statusParts.join(" ");
 }
 
 function renderAll() {
@@ -249,6 +289,7 @@ function renderAll() {
   renderMatches();
   renderThemeStage();
   renderSkins();
+  renderPurchaseStatus();
 }
 
 function showToast(message) {
@@ -263,8 +304,39 @@ function showToast(message) {
 }
 
 function startCheckout(itemType, itemId) {
-  sendRuntimeMessage({ type: "START_CHECKOUT", itemType, itemId });
-  showToast("Checkout is ready for Stripe connection. No purchase was charged in this MVP.");
+  const offer = itemType === "bundle" && itemId === "all"
+    ? getOffer("skins_all_2026")
+    : itemType === "bundle" && itemId === "five"
+      ? getOffer("skin_five")
+      : getOffer("skin_single");
+
+  const payload = {
+    type: "START_CHECKOUT",
+    sku: offer.sku,
+    skinId: itemType === "skin" ? itemId : null,
+  };
+
+  setPurchaseStatus(PURCHASE_STATUS.pending, { sku: offer.sku, skinId: payload.skinId }).then((nextState) => {
+    appState = nextState;
+    renderPurchaseStatus();
+  });
+
+  sendRuntimeMessage(payload);
+  showToast(`Opening ${offer.label} in Stripe checkout.`);
+}
+
+async function restorePurchases() {
+  appState = await setPurchaseStatus(PURCHASE_STATUS.pending, { restore: true });
+  renderPurchaseStatus();
+  await sendRuntimeMessage({ type: "RESTORE_PURCHASES" });
+  showToast("Restoring purchases from your Stripe entitlement record.");
+}
+
+async function redeemSkinCredit(skinId) {
+  appState = await setPurchaseStatus(PURCHASE_STATUS.pending, { redeemSkinId: skinId });
+  renderPurchaseStatus();
+  await sendRuntimeMessage({ type: "REDEEM_SKIN", skinId });
+  showToast("Applying one skin credit.");
 }
 
 async function refreshLiveData({ announce = false } = {}) {
@@ -308,6 +380,7 @@ document.addEventListener("click", async (event) => {
   const previewButton = event.target.closest("[data-preview-skin]");
   const cancelPreviewButton = event.target.closest("[data-cancel-preview]");
   const buyButton = event.target.closest("[data-buy-skin]");
+  const redeemButton = event.target.closest("[data-redeem-skin]");
   const bundleButton = event.target.closest("[data-bundle]");
 
   if (watchButton) {
@@ -350,6 +423,10 @@ document.addEventListener("click", async (event) => {
     startCheckout("skin", buyButton.dataset.buySkin);
   }
 
+  if (redeemButton) {
+    await redeemSkinCredit(redeemButton.dataset.redeemSkin);
+  }
+
   if (bundleButton) {
     startCheckout("bundle", bundleButton.dataset.bundle);
   }
@@ -359,6 +436,7 @@ elements.favoritesOnly.addEventListener("change", renderMatches);
 elements.refreshButton.addEventListener("click", () => refreshLiveData({ announce: true }));
 elements.skinSearch.addEventListener("input", renderSkins);
 elements.skinFilter.addEventListener("change", renderSkins);
+elements.restoreButton?.addEventListener("click", restorePurchases);
 
 renderAll();
 
@@ -367,9 +445,19 @@ setInterval(refreshLiveData, 30000);
 
 if (typeof chrome !== "undefined" && chrome.storage?.onChanged) {
   chrome.storage.onChanged.addListener((changes, areaName) => {
-    if (areaName !== "local" || !changes[LIVE_CACHE_KEY]?.newValue) return;
-    liveSnapshot = changes[LIVE_CACHE_KEY].newValue;
-    matches = liveSnapshot.matches;
-    renderAll();
+    if (areaName === "local" && changes[LIVE_CACHE_KEY]?.newValue) {
+      liveSnapshot = changes[LIVE_CACHE_KEY].newValue;
+      matches = liveSnapshot.matches;
+      renderAll();
+      return;
+    }
+
+    if (areaName === "local" || areaName === "sync") {
+      loadState().then((nextState) => {
+        appState = nextState;
+        applySkin(appState.activeSkinId);
+        renderAll();
+      });
+    }
   });
 }

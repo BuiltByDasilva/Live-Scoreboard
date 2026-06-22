@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+  <title id="title">Live Scoreboard monetization launch roadmap</title>
+  <desc id="desc">Eight stages from business setup through public Chrome Web Store launch.</desc>
+  <defs>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="9" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <style>
+      .title{font:900 54px Inter,Arial,sans-serif;fill:#fffdf5}.sub{font:600 22px Inter,Arial,sans-serif;fill:#9da39b}
+      .n{font:950 26px Inter,Arial,sans-serif;fill:#070908;text-anchor:middle;dominant-baseline:middle}.head{font:850 24px Inter,Arial,sans-serif;fill:#fffdf5}
+      .body{font:600 14px Inter,Arial,sans-serif;fill:#b9c0b7}.owner{font:900 14px Inter,Arial,sans-serif;fill:#b8ff16}.tiny{font:700 16px Inter,Arial,sans-serif;fill:#9da39b}
+    </style>
+  </defs>
+  <rect width="1600" height="900" fill="#070908"/>
+  <circle cx="90" cy="88" r="48" fill="#111511" stroke="#b8ff16" stroke-width="5" filter="url(#glow)"/>
+  <text x="90" y="90" text-anchor="middle" dominant-baseline="middle" font-family="Inter,Arial" font-size="19" font-weight="950" fill="#fffdf5">2026</text>
+  <circle cx="126" cy="122" r="8" fill="#ff5d4d"/>
+  <text x="160" y="82" class="title">From zero revenue to public launch</text>
+  <text x="160" y="119" class="sub">Eight gates. Do not switch on live payments until every gate is green.</text>
+  <line x1="170" y1="250" x2="1430" y2="250" stroke="#303530" stroke-width="8"/>
+  <line x1="170" y1="572" x2="1430" y2="572" stroke="#303530" stroke-width="8"/>
+
+  <g transform="translate(65 178)">
+    <circle cx="105" cy="72" r="32" fill="#b8ff16"/><text x="105" y="73" class="n">1</text>
+    <rect y="118" width="210" height="185" rx="8" fill="#111511" stroke="#303530"/>
+    <text x="18" y="151" class="owner">YOU</text><text x="18" y="185" class="head">Business basics</text>
+    <text x="18" y="218" class="body"><tspan x="18">Identity, payout bank,</tspan><tspan x="18" dy="25">support email, domain,</tspan><tspan x="18" dy="25">terms and refund policy.</tspan></text>
+  </g>
+  <g transform="translate(325 178)">
+    <circle cx="105" cy="72" r="32" fill="#b8ff16"/><text x="105" y="73" class="n">2</text>
+    <rect y="118" width="210" height="185" rx="8" fill="#111511" stroke="#303530"/>
+    <text x="18" y="151" class="owner">YOU</text><text x="18" y="185" class="head">Stripe ready</text>
+    <text x="18" y="218" class="body"><tspan x="18">Activate account, enable</tspan><tspan x="18" dy="25">2FA, create 3 prices,</tspan><tspan x="18" dy="25">configure receipts.</tspan></text>
+  </g>
+  <g transform="translate(585 178)">
+    <circle cx="105" cy="72" r="32" fill="#b8ff16"/><text x="105" y="73" class="n">3</text>
+    <rect y="118" width="210" height="185" rx="8" fill="#111511" stroke="#303530"/>
+    <text x="18" y="151" class="owner">YOU + CODE</text><text x="18" y="185" class="head">Backend</text>
+    <text x="18" y="218" class="body"><tspan x="18">Supabase database,</tspan><tspan x="18" dy="25">Checkout endpoint,</tspan><tspan x="18" dy="25">signed webhook + licenses.</tspan></text>
+  </g>
+  <g transform="translate(845 178)">
+    <circle cx="105" cy="72" r="32" fill="#b8ff16"/><text x="105" y="73" class="n">4</text>
+    <rect y="118" width="210" height="185" rx="8" fill="#111511" stroke="#303530"/>
+    <text x="18" y="151" class="owner">CODE</text><text x="18" y="185" class="head">Extension</text>
+    <text x="18" y="218" class="body"><tspan x="18">License ID, hosted</tspan><tspan x="18" dy="25">checkout, auto unlock,</tspan><tspan x="18" dy="25">restore + error states.</tspan></text>
+  </g>
+  <g transform="translate(1105 178)">
+    <circle cx="105" cy="72" r="32" fill="#ff5d4d"/><text x="105" y="73" class="n">5</text>
+    <rect y="118" width="210" height="185" rx="8" fill="#111511" stroke="#ff5d4d"/>
+    <text x="18" y="151" class="owner" fill="#ff5d4d">YOU + CODE</text><text x="18" y="185" class="head">Compliance</text>
+    <text x="18" y="218" class="body"><tspan x="18">Privacy + purchase</tspan><tspan x="18" dy="25">disclosures; minimum</tspan><tspan x="18" dy="25">access; no remote code.</tspan></text>
+  </g>
+
+  <g transform="translate(325 500)">
+    <circle cx="105" cy="72" r="32" fill="#b8ff16"/><text x="105" y="73" class="n">6</text>
+    <rect y="118" width="210" height="185" rx="8" fill="#111511" stroke="#303530"/>
+    <text x="18" y="151" class="owner">CODE</text><text x="18" y="185" class="head">Test mode</text>
+    <text x="18" y="218" class="body"><tspan x="18">Cards, cancellation,</tspan><tspan x="18" dy="25">duplicate webhooks,</tspan><tspan x="18" dy="25">refund behavior.</tspan></text>
+  </g>
+  <g transform="translate(695 500)">
+    <circle cx="105" cy="72" r="32" fill="#b8ff16"/><text x="105" y="73" class="n">7</text>
+    <rect y="118" width="210" height="185" rx="8" fill="#111511" stroke="#303530"/>
+    <text x="18" y="151" class="owner">YOU</text><text x="18" y="185" class="head">Private beta</text>
+    <text x="18" y="218" class="body"><tspan x="18">Trusted testers,</tspan><tspan x="18" dy="25">reviewer license,</tspan><tspan x="18" dy="25">support rehearsal.</tspan></text>
+  </g>
+  <g transform="translate(1065 500)">
+    <circle cx="105" cy="72" r="32" fill="#b8ff16" filter="url(#glow)"/><text x="105" y="73" class="n">8</text>
+    <rect y="118" width="210" height="185" rx="8" fill="#111511" stroke="#b8ff16" stroke-width="3"/>
+    <text x="18" y="151" class="owner">YOU</text><text x="18" y="185" class="head">Go live</text>
+    <text x="18" y="218" class="body"><tspan x="18">Live keys; public review;</tspan><tspan x="18" dy="25">monitor sales;</tspan><tspan x="18" dy="25">watch policy email.</tspan></text>
+  </g>
+  <text x="62" y="850" class="tiny">Recommended order: setup -> Stripe -> backend -> extension -> compliance -> testing -> beta -> live</text>
+  <text x="1538" y="850" text-anchor="end" class="tiny">LIVE SCOREBOARD / LAUNCH ROADMAP</text>
+</svg>

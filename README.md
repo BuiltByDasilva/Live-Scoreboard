@@ -16,7 +16,7 @@ This MVP intentionally avoids official logos, official event marks, team federat
 - Local Chrome storage for settings
 - 48 original country-inspired skins with unique motifs, patterns, palettes, and cultural design notes
 - Skin search, owned/locked filters, active-theme preview, and `$0.99` / `$2.99` / `$9.99` purchase surfaces
-- No page-reading permissions; one narrowly scoped host permission for the live scoreboard feed
+- No page-reading permissions; narrowly scoped host permissions for the live scoreboard feed and the payment entitlement API
 
 ## Load locally
 
@@ -49,8 +49,8 @@ Before marketplace publication, obtain written commercial-use approval for the l
 Recommended production additions:
 
 - Licensed live-score API via the existing provider adapter and a small backend proxy so API keys are not exposed in the extension.
-- Stripe Checkout or Stripe Payment Links for skin-pack purchases.
-- Server-side license records for purchased skin packs.
+- A completed live-mode Stripe test purchase to verify webhook fulfillment before public launch.
+- Refund and support instructions for paid skin packs.
 - Store screenshots, 1280x800 promotional imagery, privacy policy, support URL, and test instructions.
 - Broader QA in Chrome stable, Edge, and at narrow side-panel widths.
 
@@ -58,4 +58,4 @@ Recommended production additions:
 
 Each premium skin is an original visual system rather than a recolor. Themes use abstract cultural inspiration such as paper craft, landscape, tile geometry, weaving, gardens, music, and waterways. They do not include official federation crests, tournament marks, trophy artwork, kit replicas, copyrighted mascots, or claims of endorsement.
 
-The checkout controls currently emit a secure checkout handoff event and clearly state that no charge was made. Stripe URLs and the entitlement service must be connected before real payments are enabled.
+Stripe Checkout, Supabase Edge Functions, and server-side entitlement records are connected for live-mode payments. Purchases should still be verified with an end-to-end checkout before submitting the production listing.

@@ -83,14 +83,18 @@
         </label>
         <div class="skin-list" id="skinList"></div>
         <section class="bundle-shop" aria-label="Skin bundles">
-          <button type="button" data-bundle="five">
+          <button type="button" data-bundle="five" data-sku="skin_five">
             <span><strong>5-skin bundle</strong><small>Choose any five themes</small></span>
             <b>$2.99</b>
           </button>
-          <button type="button" data-bundle="all">
+          <button type="button" data-bundle="all" data-sku="skins_all_2026">
             <span><strong>All-access collection</strong><small>Unlock every current theme</small></span>
             <b>$9.99</b>
           </button>
+        </section>
+        <section class="purchase-strip" aria-label="Purchase status">
+          <p id="purchaseStatus">Secure checkout opens in Stripe. Unlocks appear automatically after payment.</p>
+          <button type="button" id="restoreButton">Restore purchases</button>
         </section>
       </section>
 

@@ -4,7 +4,8 @@ import {
   loadLiveSnapshot,
   refreshLiveSnapshot,
 } from "./src/live-data.js";
-import { loadState, saveState } from "./src/state.js";
+import { MONETIZATION_API_BASE, PURCHASE_OFFERS, PURCHASE_STATUS } from "./src/monetization.js";
+import { loadState, saveState, saveLicenseId, setEntitlements, setPurchaseStatus } from "./src/state.js";
 import { getToolbarPresentation } from "./src/toolbar.js";
 
 const REFRESH_ALARM = "live-scoreboard-refresh";
@@ -29,6 +30,18 @@ chrome.runtime.onMessage.addListener((message) => {
 
   if (message?.type === "SCOREBOARD_REFRESHED" || message?.type === "PINNED_MATCH_UPDATED") {
     updateBadgeFromCache();
+  }
+
+  if (message?.type === "START_CHECKOUT") {
+    void startCheckout(message);
+  }
+
+  if (message?.type === "RESTORE_PURCHASES") {
+    void restorePurchases();
+  }
+
+  if (message?.type === "REDEEM_SKIN") {
+    void redeemSkin(message.skinId);
   }
 });
 
@@ -120,6 +133,75 @@ async function checkWatchlistReminders() {
   }
 
   await saveState({ lastNotifiedMatchIds: Array.from(nextNotifiedIds) });
+}
+
+async function ensureLicenseId() {
+  const state = await loadState();
+  if (state.licenseId) {
+    return state.licenseId;
+  }
+
+  const licenseId = crypto.randomUUID().replaceAll("-", "");
+  await saveLicenseId(licenseId);
+  return licenseId;
+}
+
+async function startCheckout(message) {
+  const payload = {
+    licenseId: await ensureLicenseId(),
+    sku: message.sku,
+    skinId: message.skinId || null,
+  };
+
+  if (!Object.hasOwn(PURCHASE_OFFERS, payload.sku)) {
+    await setPurchaseStatus(PURCHASE_STATUS.error, payload);
+    return;
+  }
+
+  await setPurchaseStatus(PURCHASE_STATUS.pending, payload);
+  try {
+    const response = await fetch(`${MONETIZATION_API_BASE}/checkout`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) throw new Error(`Checkout failed with ${response.status}.`);
+    const data = await response.json();
+    const checkoutUrl = new URL(data.checkoutUrl);
+    if (checkoutUrl.protocol !== "https:") throw new Error("Checkout URL must use HTTPS.");
+    await chrome.tabs.create({ url: checkoutUrl.href });
+  } catch {
+    await setPurchaseStatus(PURCHASE_STATUS.error, payload);
+  }
+}
+
+async function restorePurchases() {
+  const licenseId = await ensureLicenseId();
+  try {
+    const response = await fetch(`${MONETIZATION_API_BASE}/entitlements/${licenseId}`, {
+      headers: { Accept: "application/json" },
+    });
+    if (!response.ok) throw new Error(`Restore failed with ${response.status}.`);
+    await setEntitlements(await response.json(), PURCHASE_STATUS.restored);
+  } catch {
+    await setPurchaseStatus(PURCHASE_STATUS.error, { restore: true });
+  }
+}
+
+async function redeemSkin(skinId) {
+  const payload = { licenseId: await ensureLicenseId(), skinId };
+  try {
+    const response = await fetch(`${MONETIZATION_API_BASE}/entitlements/redeem`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) throw new Error(`Redemption failed with ${response.status}.`);
+    await setEntitlements(await response.json(), PURCHASE_STATUS.restored);
+  } catch {
+    await setPurchaseStatus(PURCHASE_STATUS.error, { redeemSkinId: skinId });
+  }
 }
 
 ensureAlarms();
