@@ -5,6 +5,7 @@ This folder contains the Supabase Edge Functions and Postgres migration needed t
 ## Functions
 
 - `checkout` creates a Stripe Checkout Session for one of the extension SKUs.
+- `checkout-return` displays the hosted success/cancel page after Stripe redirects the customer.
 - `stripe-webhook` receives `checkout.session.completed` and applies the entitlement once.
 - `entitlements` lets the extension restore purchases and redeem five-pack skin credits.
 
@@ -18,7 +19,7 @@ supabase secrets set STRIPE_WEBHOOK_SECRET=whsec_...
 supabase secrets set STRIPE_PRICE_SKIN_SINGLE=price_...
 supabase secrets set STRIPE_PRICE_SKIN_FIVE=price_...
 supabase secrets set STRIPE_PRICE_SKINS_ALL_2026=price_...
-supabase secrets set CHECKOUT_RETURN_URL=https://livescoreboard.app/checkout
+supabase secrets set CHECKOUT_RETURN_URL=https://<project-ref>.supabase.co/functions/v1/checkout-return
 ```
 
 Supabase automatically provides `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in deployed Edge Functions.
@@ -28,6 +29,7 @@ Supabase automatically provides `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` i
 ```bash
 supabase db push
 supabase functions deploy checkout
+supabase functions deploy checkout-return
 supabase functions deploy entitlements
 supabase functions deploy stripe-webhook
 ```

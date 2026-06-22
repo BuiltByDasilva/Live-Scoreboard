@@ -9,6 +9,7 @@ const requiredFiles = [
   "styles.css",
   "service-worker.js",
   "supabase/functions/checkout/index.ts",
+  "supabase/functions/checkout-return/index.ts",
   "supabase/functions/entitlements/index.ts",
   "supabase/functions/stripe-webhook/index.ts",
   "supabase/migrations/202606220001_create_monetization.sql",
