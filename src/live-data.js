@@ -1,4 +1,4 @@
-import { TEAMS, getDecoratedMatches } from "./data.js";
+import { TEAMS, decorateTeam, getDecoratedMatches } from "./data.js";
 
 export const LIVE_CACHE_KEY = "liveScoreSnapshot";
 export const PRIMARY_PROVIDER = "ESPN public scoreboard";
@@ -75,13 +75,13 @@ function cleanName(value = "") {
 function findTeam({ abbreviation, displayName }) {
   const code = abbreviation?.toLocaleUpperCase();
   const byCode = TEAMS.find((team) => team.code === code);
-  if (byCode) return byCode;
+  if (byCode) return decorateTeam(byCode);
 
   const cleaned = cleanName(displayName);
   const aliasId = NAME_ALIASES.get(cleaned);
   const byAlias = aliasId && TEAMS.find((team) => team.id === aliasId);
   const byName = TEAMS.find((team) => cleanName(team.name) === cleaned);
-  if (byAlias || byName) return byAlias || byName;
+  if (byAlias || byName) return decorateTeam(byAlias || byName);
 
   return {
     id: `external-${cleaned.replace(/[^a-z0-9]+/g, "-")}`,
@@ -89,6 +89,7 @@ function findTeam({ abbreviation, displayName }) {
     name: displayName || code || "TBD",
     code: code || "TBD",
     colors: ["#64748b", "#f8fafc", "#334155"],
+    flag: "🏳️",
   };
 }
 

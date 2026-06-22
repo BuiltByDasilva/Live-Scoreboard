@@ -33,17 +33,17 @@ export function getToolbarPresentation(snapshot, state, now = Date.now()) {
     return {
       badgeText: score.slice(0, 4),
       badgeColor: snapshot.stale ? "#d39b21" : "#ff5d4d",
-      title: `${selected.homeTeam.code} ${score} ${selected.awayTeam.code} · ${minute}${moreLive} · ${getMatchFreshness(snapshot, now)}`,
+      title: `${selected.homeTeam.flag || selected.homeTeam.code} ${score} ${selected.awayTeam.flag || selected.awayTeam.code} · ${minute}${moreLive} · ${getMatchFreshness(snapshot, now)}`,
     };
   }
 
   if (selected.status === "final") {
-    return {
-      badgeText: "FT",
-      badgeColor: "#252925",
-      title: `${selected.homeTeam.code} ${selected.homeScore}-${selected.awayScore} ${selected.awayTeam.code} · Full time`,
-    };
-  }
+  return {
+    badgeText: "FT",
+    badgeColor: "#252925",
+    title: `${selected.homeTeam.flag || selected.homeTeam.code} ${selected.homeScore}-${selected.awayScore} ${selected.awayTeam.flag || selected.awayTeam.code} · Full time`,
+  };
+}
 
   const minutesAway = Math.round((new Date(selected.kickoff).getTime() - now) / 60000);
   return {

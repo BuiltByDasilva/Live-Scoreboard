@@ -289,6 +289,11 @@ h3 {
   box-shadow: inset 0 0 12px rgba(255, 255, 255, 0.04);
 }
 
+.team-flag {
+  background: rgba(7, 9, 8, 0.26);
+  font-size: 16px;
+}
+
 .team-name {
   overflow: hidden;
   color: var(--soft);
@@ -421,7 +426,13 @@ h3 {
   gap: 10px;
   overflow: hidden;
   padding: 11px;
+  background: var(--match-location-bg, linear-gradient(90deg, rgba(16, 19, 16, 0.94), rgba(7, 9, 8, 0.94)));
   transition: border-color 160ms ease, background 160ms ease;
+}
+
+.match-card > * {
+  position: relative;
+  z-index: 1;
 }
 
 .match-card::before {
@@ -432,9 +443,21 @@ h3 {
   content: "";
 }
 
+.match-card::after {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  z-index: 0;
+  color: rgba(255, 255, 255, 0.22);
+  content: var(--match-location-flag, "🌍");
+  font-size: 32px;
+  line-height: 1;
+  pointer-events: none;
+}
+
 .match-card.is-live {
   border-color: rgba(184, 255, 22, 0.46);
-  background: linear-gradient(90deg, rgba(184, 255, 22, 0.06), rgba(16, 19, 16, 0.94) 34%);
+  background: var(--match-location-bg, linear-gradient(90deg, rgba(184, 255, 22, 0.06), rgba(16, 19, 16, 0.94) 34%));
 }
 
 .match-card.is-live::before {
@@ -478,6 +501,11 @@ h3 {
   color: var(--soft);
 }
 
+.location-pill {
+  border: 1px solid color-mix(in srgb, var(--skin-a) 20%, var(--line));
+  color: var(--text);
+}
+
 .teams-row {
   display: grid;
   gap: 6px;
@@ -501,6 +529,10 @@ h3 {
   color: var(--soft);
   font-size: 9px;
   font-weight: 950;
+}
+
+.team-flag.mini-code {
+  font-size: 14px;
 }
 
 .team-row span:nth-child(2) {

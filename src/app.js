@@ -39,6 +39,44 @@ let matches = liveSnapshot.matches;
 let previewSkinId = null;
 applySkin(appState.activeSkinId);
 
+const TEAM_FLAG_FALLBACK = "🏳️";
+
+const MATCH_LOCATION_PRESETS = [
+  {
+    keys: ["vancouver", "toronto", "montreal", "ottawa", "bc place"],
+    country: "Canada",
+    flag: "🇨🇦",
+    background: "linear-gradient(128deg, rgba(255, 0, 0, 0.18), rgba(0, 80, 175, 0.16) 38%, rgba(250, 250, 250, 0.05) 72%)",
+  },
+  {
+    keys: ["mexico city", "monterrey", "guadalajara", "estadio", "zapopan", "guadalupe"],
+    country: "Mexico",
+    flag: "🇲🇽",
+    background: "linear-gradient(128deg, rgba(0, 104, 71, 0.24), rgba(206, 17, 38, 0.16) 40%, rgba(0, 47, 75, 0.09) 72%)",
+  },
+  {
+    keys: ["usa", "new york", "los angeles", "seattle", "dallas", "philadelphia", "houston", "boston", "atlanta", "miami", "kansas", "san francisco", "foxborough", "east rutherford", "santa clara"],
+    country: "United States",
+    flag: "🇺🇸",
+    background: "linear-gradient(128deg, rgba(60, 59, 110, 0.22), rgba(178, 34, 52, 0.1) 42%, rgba(255, 255, 255, 0.05) 72%)",
+  },
+];
+
+function getMatchLocation(match = {}) {
+  const venue = `${match.venue || ""} ${match.location || ""}`.toLocaleLowerCase();
+  const preset = MATCH_LOCATION_PRESETS.find((entry) => entry.keys.some((key) => venue.includes(key)));
+
+  return preset || {
+    country: "Location",
+    flag: "🌍",
+    background: "linear-gradient(128deg, rgba(18, 31, 40, 0.22), rgba(7, 24, 39, 0.05) 42%, rgba(255, 255, 255, 0.06) 72%)",
+  };
+}
+
+function renderTeamFlag(team, cssClass) {
+  return `<span class="${cssClass}">${team?.flag || TEAM_FLAG_FALLBACK}</span>`;
+}
+
 function getDisplayedSkin() {
   return getSkin(previewSkinId || appState.activeSkinId);
 }
@@ -106,12 +144,12 @@ function renderHero() {
       </div>
       <div class="scoreline">
         <div class="team-block">
-          <span class="team-code">${featured.homeTeam.code}</span>
+          ${renderTeamFlag(featured.homeTeam, "team-code team-flag")}
           <p class="team-name">${featured.homeTeam.name}</p>
         </div>
         <div class="score">${getScore(featured)}</div>
         <div class="team-block">
-          <span class="team-code">${featured.awayTeam.code}</span>
+          ${renderTeamFlag(featured.awayTeam, "team-code team-flag")}
           <p class="team-name">${featured.awayTeam.name}</p>
         </div>
       </div>
@@ -122,24 +160,26 @@ function renderHero() {
 function createMatchCard(match) {
   const isWatched = appState.watchedMatchIds.includes(match.id);
   const isPinned = appState.toolbarMatchId === match.id;
+  const location = getMatchLocation(match);
   const statusClass = match.status;
 
   return `
-    <article class="match-card is-${statusClass}" data-match-id="${match.id}">
+    <article class="match-card is-${statusClass}" data-match-id="${match.id}" style="--match-location-flag:${location.flag}; --match-location-bg:${location.background};">
       <div>
         <div class="match-meta">
           <span class="pill ${statusClass}">${statusLabel(match)}</span>
           <span class="pill">${match.stage}</span>
+          <span class="pill location-pill">${location.flag} ${location.country}</span>
           <span class="pill">${match.venue}</span>
         </div>
         <div class="teams-row">
           <div class="team-row">
-            <span class="mini-code">${match.homeTeam.code}</span>
+            ${renderTeamFlag(match.homeTeam, "mini-code team-flag")}
             <span>${match.homeTeam.name}</span>
             <span class="team-score">${match.homeScore ?? "-"}</span>
           </div>
           <div class="team-row">
-            <span class="mini-code">${match.awayTeam.code}</span>
+            ${renderTeamFlag(match.awayTeam, "mini-code team-flag")}
             <span>${match.awayTeam.name}</span>
             <span class="team-score">${match.awayScore ?? "-"}</span>
           </div>
@@ -195,7 +235,7 @@ function renderThemeStage() {
         <p>${skin.culturalNote}</p>
       </div>
       <div class="mini-score-preview" aria-label="Sample themed score">
-        <span>NOR</span><strong>2</strong><i>78'</i><strong>1</strong><span>SEN</span>
+        <span>${matches[0]?.homeTeam?.flag || TEAM_FLAG_FALLBACK}</span><strong>2</strong><i>78'</i><strong>1</strong><span>${matches[0]?.awayTeam?.flag || TEAM_FLAG_FALLBACK}</span>
       </div>
       <div class="theme-stage-actions">
         ${isUnlocked && !isActive ? `<button type="button" data-apply-skin="${skin.id}">Apply theme</button>` : ""}

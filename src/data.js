@@ -1,3 +1,124 @@
+const TEAM_FLAGS = {
+  mex: "🇲🇽",
+  rsa: "🇿🇦",
+  kor: "🇰🇷",
+  cze: "🇨🇿",
+  can: "🇨🇦",
+  qat: "🇶🇦",
+  sui: "🇨🇭",
+  bih: "🇧🇦",
+  bra: "🇧🇷",
+  mar: "🇲🇦",
+  hai: "🇭🇹",
+  sco: "🏴",
+  usa: "🇺🇸",
+  aus: "🇦🇺",
+  tur: "🇹🇷",
+  par: "🇵🇾",
+  ger: "🇩🇪",
+  cur: "🇨🇼",
+  civ: "🇨🇮",
+  ecu: "🇪🇨",
+  ned: "🇳🇱",
+  jpn: "🇯🇵",
+  swe: "🇸🇪",
+  tun: "🇹🇳",
+  bel: "🇧🇪",
+  egy: "🇪🇬",
+  irn: "🇮🇷",
+  nzl: "🇳🇿",
+  esp: "🇪🇸",
+  cpv: "🇨🇻",
+  ksa: "🇸🇦",
+  uru: "🇺🇾",
+  fra: "🇫🇷",
+  sen: "🇸🇳",
+  irq: "🇮🇶",
+  nor: "🇳🇴",
+  arg: "🇦🇷",
+  aut: "🇦🇹",
+  alg: "🇩🇿",
+  jor: "🇯🇴",
+  por: "🇵🇹",
+  cod: "🇨🇩",
+  uzb: "🇺🇿",
+  col: "🇨🇴",
+  eng: "🏴",
+  cro: "🇭🇷",
+  gha: "🇬🇭",
+  pan: "🇵🇦",
+};
+
+const TEAM_FLAGS_BY_CODE = {
+  MEX: "🇲🇽",
+  RSA: "🇿🇦",
+  KOR: "🇰🇷",
+  CZE: "🇨🇿",
+  CAN: "🇨🇦",
+  QAT: "🇶🇦",
+  SUI: "🇨🇭",
+  BIH: "🇧🇦",
+  BRA: "🇧🇷",
+  MAR: "🇲🇦",
+  HAI: "🇭🇹",
+  SCO: "🏴",
+  USA: "🇺🇸",
+  AUS: "🇦🇺",
+  TUR: "🇹🇷",
+  PAR: "🇵🇾",
+  GER: "🇩🇪",
+  CUR: "🇨🇼",
+  CIV: "🇨🇮",
+  ECU: "🇪🇨",
+  NED: "🇳🇱",
+  JPN: "🇯🇵",
+  SWE: "🇸🇪",
+  TUN: "🇹🇳",
+  BEL: "🇧🇪",
+  EGY: "🇪🇬",
+  IRN: "🇮🇷",
+  NZL: "🇳🇿",
+  ESP: "🇪🇸",
+  CPV: "🇨🇻",
+  KSA: "🇸🇦",
+  URU: "🇺🇾",
+  FRA: "🇫🇷",
+  SEN: "🇸🇳",
+  IRQ: "🇮🇶",
+  NOR: "🇳🇴",
+  ARG: "🇦🇷",
+  AUT: "🇦🇹",
+  ALG: "🇩🇿",
+  JOR: "🇯🇴",
+  POR: "🇵🇹",
+  COD: "🇨🇩",
+  UZB: "🇺🇿",
+  COL: "🇨🇴",
+  ENG: "🏴",
+  CRO: "🇭🇷",
+  GHA: "🇬🇭",
+  PAN: "🇵🇦",
+};
+
+const TEAM_FLAG_FALLBACK = "🏳️";
+
+function enrichTeam(team) {
+  if (!team) {
+    return {
+      id: "",
+      group: "",
+      name: "TBD",
+      code: "TBD",
+      colors: ["#64748b", "#f8fafc", "#334155"],
+      flag: TEAM_FLAG_FALLBACK,
+    };
+  }
+
+  return {
+    ...team,
+    flag: team.flag || TEAM_FLAGS[team.id] || TEAM_FLAGS_BY_CODE[team.code] || TEAM_FLAG_FALLBACK,
+  };
+}
 export const TEAMS = [
   { id: "mex", group: "A", name: "Mexico", code: "MEX", colors: ["#006847", "#ffffff", "#ce1126"] },
   { id: "rsa", group: "A", name: "South Africa", code: "RSA", colors: ["#007a4d", "#ffb612", "#de3831"] },
@@ -77,7 +198,11 @@ export const MATCHES = [
 ];
 
 export function getTeam(teamId) {
-  return TEAMS.find((team) => team.id === teamId);
+  return enrichTeam(TEAMS.find((team) => team.id === teamId));
+}
+
+export function decorateTeam(team) {
+  return enrichTeam(team);
 }
 
 export function getDecoratedMatches() {
