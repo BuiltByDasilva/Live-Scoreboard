@@ -1,5 +1,5 @@
-import { TEAMS, createPlaceholderTeam, decorateTeam, getDecoratedMatches } from "./data.js";
-import { isPlaceholderTeamLabel } from "./flags.js";
+import { TEAMS, decorateTeam, getDecoratedMatches } from "./data.js";
+import { createPlaceholderTeam, isPlaceholderTeamLabel } from "./flags.js";
 
 export const LIVE_CACHE_KEY = "liveScoreSnapshot";
 export const PRIMARY_PROVIDER = "ESPN public scoreboard";

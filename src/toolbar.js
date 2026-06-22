@@ -1,5 +1,9 @@
 import { getMatchFreshness } from "./live-data.js";
 
+function getToolbarTeamLabel(team) {
+  return team?.code || team?.name || "TBD";
+}
+
 export function chooseToolbarMatch(matches, state) {
   const pinned = matches.find((match) => match.id === state.toolbarMatchId);
   if (pinned) return pinned;
@@ -33,7 +37,7 @@ export function getToolbarPresentation(snapshot, state, now = Date.now()) {
     return {
       badgeText: score.slice(0, 4),
       badgeColor: snapshot.stale ? "#d39b21" : "#ff5d4d",
-      title: `${selected.homeTeam.name || "TBD"} ${score} ${selected.awayTeam.name || "TBD"} · ${minute}${moreLive} · ${getMatchFreshness(snapshot, now)}`,
+      title: `${getToolbarTeamLabel(selected.homeTeam)} ${score} ${getToolbarTeamLabel(selected.awayTeam)} · ${minute}${moreLive} · ${getMatchFreshness(snapshot, now)}`,
     };
   }
 
@@ -41,7 +45,7 @@ export function getToolbarPresentation(snapshot, state, now = Date.now()) {
     return {
       badgeText: "FT",
       badgeColor: "#252925",
-      title: `${selected.homeTeam.name || "TBD"} ${selected.homeScore}-${selected.awayScore} ${selected.awayTeam.name || "TBD"} · Full time`,
+      title: `${getToolbarTeamLabel(selected.homeTeam)} ${selected.homeScore}-${selected.awayScore} ${getToolbarTeamLabel(selected.awayTeam)} · Full time`,
     };
   }
 
