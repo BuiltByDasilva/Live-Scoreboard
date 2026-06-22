@@ -1,0 +1,105 @@
+import fs from "node:fs";
+import path from "node:path";
+
+const root = process.cwd();
+const requiredFiles = [
+  "manifest.json",
+  "assets/data/worldcup-2026.json",
+  "sidepanel.html",
+  "styles.css",
+  "service-worker.js",
+  "src/app.js",
+  "src/data.js",
+  "src/live-data.js",
+  "src/skins.js",
+  "src/state.js",
+  "src/toolbar.js"
+];
+
+for (const file of requiredFiles) {
+  const fullPath = path.join(root, file);
+  if (!fs.existsSync(fullPath)) {
+    throw new Error(`Missing required file: ${file}`);
+  }
+}
+
+const manifest = JSON.parse(fs.readFileSync(path.join(root, "manifest.json"), "utf8"));
+const expectedPermissions = ["alarms", "notifications", "sidePanel", "storage"];
+
+if (manifest.manifest_version !== 3) {
+  throw new Error("Manifest must use version 3.");
+}
+
+for (const permission of expectedPermissions) {
+  if (!manifest.permissions.includes(permission)) {
+    throw new Error(`Missing permission: ${permission}`);
+  }
+}
+
+const expectedHosts = [
+  "https://site.api.espn.com/*"
+];
+
+if (JSON.stringify(manifest.host_permissions) !== JSON.stringify(expectedHosts)) {
+  throw new Error("Live-score host permissions must remain limited to the declared data provider.");
+}
+
+const dataModule = await import(path.join(root, "src/data.js"));
+const skinsModule = await import(path.join(root, "src/skins.js"));
+const liveDataModule = await import(path.join(root, "src/live-data.js"));
+
+if (dataModule.TEAMS.length !== 48) {
+  throw new Error(`Expected 48 teams, found ${dataModule.TEAMS.length}.`);
+}
+
+if (skinsModule.SKINS.length !== 49) {
+  throw new Error(`Expected default skin plus 48 team skins, found ${skinsModule.SKINS.length}.`);
+}
+
+const premiumSkins = skinsModule.SKINS.filter((skin) => skin.id !== "default");
+for (const field of ["name", "motif", "pattern"]) {
+  const values = premiumSkins.map((skin) => skin[field]);
+  if (new Set(values).size !== premiumSkins.length) {
+    throw new Error(`Every premium skin must have a unique ${field}.`);
+  }
+}
+
+for (const skin of premiumSkins) {
+  if (!skin.culturalNote || !skin.patternKey || skin.colors.length !== 3) {
+    throw new Error(`Skin ${skin.id} is missing theme artwork metadata.`);
+  }
+
+  if (!skin.description.includes(skin.team)) {
+    throw new Error(`Skin ${skin.id} must identify its country inspiration.`);
+  }
+}
+
+const html = fs.readFileSync(path.join(root, "sidepanel.html"), "utf8");
+for (const id of ["skinList", "skinSearch", "skinFilter", "themeStage"]) {
+  if (!html.includes(`id="${id}"`)) {
+    throw new Error(`Missing skins interface element: ${id}.`);
+  }
+}
+
+const teamIds = new Set(dataModule.TEAMS.map((team) => team.id));
+for (const match of dataModule.MATCHES) {
+  if (!teamIds.has(match.home) || !teamIds.has(match.away)) {
+    throw new Error(`Match ${match.id} references an unknown team.`);
+  }
+}
+
+const safeSnapshot = liveDataModule.getSafeBundledSnapshot();
+if (safeSnapshot.matches.some((match) => match.status === "live")) {
+  throw new Error("Offline fallback must never fabricate a live match.");
+}
+
+const bundledSchedule = JSON.parse(fs.readFileSync(
+  path.join(root, "assets/data/worldcup-2026.json"),
+  "utf8"
+));
+const normalizedSchedule = liveDataModule.parseOpenFootballMatches(bundledSchedule);
+if (normalizedSchedule.length !== 104) {
+  throw new Error(`Expected the complete 104-match schedule, found ${normalizedSchedule.length}.`);
+}
+
+console.log("Live Scoreboard validation passed.");
