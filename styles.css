@@ -279,19 +279,24 @@ h3 {
   min-width: 36px;
   min-height: 36px;
   place-items: center;
+  overflow: hidden;
   margin-bottom: 6px;
   border: 1px solid color-mix(in srgb, var(--skin-b) 40%, var(--line));
   border-radius: 50%;
   background: color-mix(in srgb, var(--skin-b) 12%, rgba(10, 12, 10, 0.74));
-  color: var(--text);
-  font-size: 11px;
-  font-weight: 950;
   box-shadow: inset 0 0 12px rgba(255, 255, 255, 0.04);
 }
 
-.team-flag {
-  background: rgba(7, 9, 8, 0.26);
-  font-size: 16px;
+.mini-code,
+.team-code {
+  padding: 0;
+}
+
+.flag-icon {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .team-name {
@@ -448,10 +453,16 @@ h3 {
   right: 10px;
   top: 10px;
   z-index: 0;
-  color: rgba(255, 255, 255, 0.22);
-  content: var(--match-location-flag, "🌍");
-  font-size: 32px;
-  line-height: 1;
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 50%;
+  background-color: rgba(7, 9, 8, 0.42);
+  background-image: var(--match-location-flag-url);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  content: "";
   pointer-events: none;
 }
 
@@ -502,6 +513,9 @@ h3 {
 }
 
 .location-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   border: 1px solid color-mix(in srgb, var(--skin-a) 20%, var(--line));
   color: var(--text);
 }
@@ -523,16 +537,23 @@ h3 {
   width: 28px;
   height: 28px;
   place-items: center;
+  overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 50%;
   background: var(--surface-bright);
-  color: var(--soft);
-  font-size: 9px;
-  font-weight: 950;
 }
 
-.team-flag.mini-code {
-  font-size: 14px;
+.mini-code .flag-icon {
+  width: 100%;
+  height: 100%;
+}
+
+.inline-flag {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+  border-radius: 50%;
+  object-fit: cover;
 }
 
 .team-row span:nth-child(2) {

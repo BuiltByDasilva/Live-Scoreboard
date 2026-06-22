@@ -1,4 +1,5 @@
-import { TEAMS, decorateTeam, getDecoratedMatches } from "./data.js";
+import { TEAMS, createPlaceholderTeam, decorateTeam, getDecoratedMatches } from "./data.js";
+import { isPlaceholderTeamLabel } from "./flags.js";
 
 export const LIVE_CACHE_KEY = "liveScoreSnapshot";
 export const PRIMARY_PROVIDER = "ESPN public scoreboard";
@@ -73,6 +74,10 @@ function cleanName(value = "") {
 }
 
 function findTeam({ abbreviation, displayName }) {
+  if (isPlaceholderTeamLabel(displayName) || (!displayName && !abbreviation)) {
+    return createPlaceholderTeam();
+  }
+
   const code = abbreviation?.toLocaleUpperCase();
   const byCode = TEAMS.find((team) => team.code === code);
   if (byCode) return decorateTeam(byCode);
@@ -83,14 +88,13 @@ function findTeam({ abbreviation, displayName }) {
   const byName = TEAMS.find((team) => cleanName(team.name) === cleaned);
   if (byAlias || byName) return decorateTeam(byAlias || byName);
 
-  return {
+  return decorateTeam({
     id: `external-${cleaned.replace(/[^a-z0-9]+/g, "-")}`,
     group: "",
     name: displayName || code || "TBD",
     code: code || "TBD",
     colors: ["#64748b", "#f8fafc", "#334155"],
-    flag: "🏳️",
-  };
+  });
 }
 
 function getStage(homeTeam, awayTeam) {
@@ -126,12 +130,12 @@ export function parseEspnMatches(payload) {
     const home = competitors.find((entry) => entry.homeAway === "home");
     const away = competitors.find((entry) => entry.homeAway === "away");
 
-    if (!competition || !home?.team || !away?.team) {
+    if (!competition) {
       throw new Error(`Primary feed match ${event.id || "unknown"} is incomplete.`);
     }
 
-    const homeTeam = findTeam(home.team);
-    const awayTeam = findTeam(away.team);
+    const homeTeam = home?.team ? findTeam(home.team) : createPlaceholderTeam();
+    const awayTeam = away?.team ? findTeam(away.team) : createPlaceholderTeam();
     const status = competition.status || event.status;
     const matchStatus = mapEspnStatus(status);
 

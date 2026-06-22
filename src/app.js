@@ -14,6 +14,7 @@ import {
   setToolbarMatch,
   toggleWatchedMatch,
 } from "./state.js";
+import { PLACEHOLDER_FLAG_URL, getLocationFlagUrl } from "./flags.js";
 
 const elements = {
   heroScore: document.querySelector("#heroScore"),
@@ -39,25 +40,23 @@ let matches = liveSnapshot.matches;
 let previewSkinId = null;
 applySkin(appState.activeSkinId);
 
-const TEAM_FLAG_FALLBACK = "🏳️";
-
 const MATCH_LOCATION_PRESETS = [
   {
     keys: ["vancouver", "toronto", "montreal", "ottawa", "bc place"],
     country: "Canada",
-    flag: "🇨🇦",
+    flagUrl: getLocationFlagUrl("Canada"),
     background: "linear-gradient(128deg, rgba(255, 0, 0, 0.18), rgba(0, 80, 175, 0.16) 38%, rgba(250, 250, 250, 0.05) 72%)",
   },
   {
     keys: ["mexico city", "monterrey", "guadalajara", "estadio", "zapopan", "guadalupe"],
     country: "Mexico",
-    flag: "🇲🇽",
+    flagUrl: getLocationFlagUrl("Mexico"),
     background: "linear-gradient(128deg, rgba(0, 104, 71, 0.24), rgba(206, 17, 38, 0.16) 40%, rgba(0, 47, 75, 0.09) 72%)",
   },
   {
     keys: ["usa", "new york", "los angeles", "seattle", "dallas", "philadelphia", "houston", "boston", "atlanta", "miami", "kansas", "san francisco", "foxborough", "east rutherford", "santa clara"],
     country: "United States",
-    flag: "🇺🇸",
+    flagUrl: getLocationFlagUrl("United States"),
     background: "linear-gradient(128deg, rgba(60, 59, 110, 0.22), rgba(178, 34, 52, 0.1) 42%, rgba(255, 255, 255, 0.05) 72%)",
   },
 ];
@@ -68,13 +67,19 @@ function getMatchLocation(match = {}) {
 
   return preset || {
     country: "Location",
-    flag: "🌍",
+    flagUrl: PLACEHOLDER_FLAG_URL,
     background: "linear-gradient(128deg, rgba(18, 31, 40, 0.22), rgba(7, 24, 39, 0.05) 42%, rgba(255, 255, 255, 0.06) 72%)",
   };
 }
 
+function renderFlagIcon(src, alt = "", className = "") {
+  return `<img class="${className}" src="${src}" alt="${alt}" />`;
+}
+
 function renderTeamFlag(team, cssClass) {
-  return `<span class="${cssClass}">${team?.flag || TEAM_FLAG_FALLBACK}</span>`;
+  const src = team?.flagUrl || PLACEHOLDER_FLAG_URL;
+  const alt = team?.name && team.name !== "TBD" ? `${team.name} flag` : "To be determined";
+  return `<span class="${cssClass}">${renderFlagIcon(src, alt, "flag-icon")}</span>`;
 }
 
 function getDisplayedSkin() {
@@ -164,12 +169,12 @@ function createMatchCard(match) {
   const statusClass = match.status;
 
   return `
-    <article class="match-card is-${statusClass}" data-match-id="${match.id}" style="--match-location-flag:${location.flag}; --match-location-bg:${location.background};">
+    <article class="match-card is-${statusClass}" data-match-id="${match.id}" style="--match-location-flag-url:url('${location.flagUrl}'); --match-location-bg:${location.background};">
       <div>
         <div class="match-meta">
           <span class="pill ${statusClass}">${statusLabel(match)}</span>
           <span class="pill">${match.stage}</span>
-          <span class="pill location-pill">${location.flag} ${location.country}</span>
+          <span class="pill location-pill">${renderFlagIcon(location.flagUrl, `${location.country} flag`, "inline-flag")} ${location.country}</span>
           <span class="pill">${match.venue}</span>
         </div>
         <div class="teams-row">
@@ -235,7 +240,11 @@ function renderThemeStage() {
         <p>${skin.culturalNote}</p>
       </div>
       <div class="mini-score-preview" aria-label="Sample themed score">
-        <span>${matches[0]?.homeTeam?.flag || TEAM_FLAG_FALLBACK}</span><strong>2</strong><i>78'</i><strong>1</strong><span>${matches[0]?.awayTeam?.flag || TEAM_FLAG_FALLBACK}</span>
+        ${renderTeamFlag(matches[0]?.homeTeam, "mini-code")}
+        <strong>2</strong>
+        <i>78'</i>
+        <strong>1</strong>
+        ${renderTeamFlag(matches[0]?.awayTeam, "mini-code")}
       </div>
       <div class="theme-stage-actions">
         ${isUnlocked && !isActive ? `<button type="button" data-apply-skin="${skin.id}">Apply theme</button>` : ""}

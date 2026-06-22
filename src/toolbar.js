@@ -21,7 +21,7 @@ export function getToolbarPresentation(snapshot, state, now = Date.now()) {
       badgeText: "",
       badgeColor: "#252925",
       title: next
-        ? `Next: ${next.homeTeam.name} vs ${next.awayTeam.name} · ${new Date(next.kickoff).toLocaleString()}`
+        ? `Next: ${next.homeTeam.name || "TBD"} vs ${next.awayTeam.name || "TBD"} · ${new Date(next.kickoff).toLocaleString()}`
         : "Live Scoreboard · No live matches",
     };
   }
@@ -33,22 +33,22 @@ export function getToolbarPresentation(snapshot, state, now = Date.now()) {
     return {
       badgeText: score.slice(0, 4),
       badgeColor: snapshot.stale ? "#d39b21" : "#ff5d4d",
-      title: `${selected.homeTeam.flag || selected.homeTeam.code} ${score} ${selected.awayTeam.flag || selected.awayTeam.code} · ${minute}${moreLive} · ${getMatchFreshness(snapshot, now)}`,
+      title: `${selected.homeTeam.name || "TBD"} ${score} ${selected.awayTeam.name || "TBD"} · ${minute}${moreLive} · ${getMatchFreshness(snapshot, now)}`,
     };
   }
 
   if (selected.status === "final") {
-  return {
-    badgeText: "FT",
-    badgeColor: "#252925",
-    title: `${selected.homeTeam.flag || selected.homeTeam.code} ${selected.homeScore}-${selected.awayScore} ${selected.awayTeam.flag || selected.awayTeam.code} · Full time`,
-  };
-}
+    return {
+      badgeText: "FT",
+      badgeColor: "#252925",
+      title: `${selected.homeTeam.name || "TBD"} ${selected.homeScore}-${selected.awayScore} ${selected.awayTeam.name || "TBD"} · Full time`,
+    };
+  }
 
   const minutesAway = Math.round((new Date(selected.kickoff).getTime() - now) / 60000);
   return {
     badgeText: minutesAway >= 0 && minutesAway <= 60 ? `${minutesAway}m` : "",
     badgeColor: "#b8ff16",
-    title: `${selected.homeTeam.name} vs ${selected.awayTeam.name} · ${new Date(selected.kickoff).toLocaleString()}`,
+    title: `${selected.homeTeam.name || "TBD"} vs ${selected.awayTeam.name || "TBD"} · ${new Date(selected.kickoff).toLocaleString()}`,
   };
 }
