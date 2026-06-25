@@ -16,6 +16,7 @@ const requiredFiles = [
   "src/app.js",
   "src/data.js",
   "src/live-data.js",
+  "src/match-order.js",
   "src/monetization.js",
   "src/skins.js",
   "src/state.js",

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Live Scoreboard",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Glanceable live football scores in the Chrome toolbar, watchlist reminders, and original country-inspired skins.",
   "minimum_chrome_version": "116",
   "action": {

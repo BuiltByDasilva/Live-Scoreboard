@@ -37,8 +37,20 @@ function createLicenseId() {
 export async function saveLicenseId(licenseId) {
   memorySyncStore[LICENSE_STORAGE_KEY] = licenseId;
 
+  if (hasChromeStorage()) {
+    try {
+      await chrome.storage.local.set({ [LICENSE_STORAGE_KEY]: licenseId });
+    } catch {
+      // Local storage failures are uncommon but should not block onboarding.
+    }
+  }
+
   if (hasChromeSyncStorage()) {
-    await chrome.storage.sync.set({ [LICENSE_STORAGE_KEY]: licenseId });
+    try {
+      await chrome.storage.sync.set({ [LICENSE_STORAGE_KEY]: licenseId });
+    } catch {
+      // Sync can fail for permission/consent reasons in some Chrome profiles.
+    }
   }
 
   return licenseId;
@@ -53,17 +65,23 @@ export async function loadState() {
   }
 
   if (hasChromeSyncStorage()) {
-    syncState = await chrome.storage.sync.get({ [LICENSE_STORAGE_KEY]: null });
+    try {
+      syncState = await chrome.storage.sync.get({ [LICENSE_STORAGE_KEY]: null });
+    } catch {
+      syncState = { [LICENSE_STORAGE_KEY]: null };
+    }
   }
 
   const state = {
     ...defaults,
     ...localState,
-    licenseId: syncState[LICENSE_STORAGE_KEY] || localState.licenseId || null,
+    licenseId: syncState[LICENSE_STORAGE_KEY] || localState[LICENSE_STORAGE_KEY] || localState.licenseId || null,
   };
 
   if (!state.licenseId) {
     state.licenseId = createLicenseId();
+    await saveLicenseId(state.licenseId);
+  } else if (state.licenseId !== syncState[LICENSE_STORAGE_KEY] || state.licenseId !== localState[LICENSE_STORAGE_KEY]) {
     await saveLicenseId(state.licenseId);
   }
 

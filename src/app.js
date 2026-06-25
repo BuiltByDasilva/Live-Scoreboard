@@ -5,16 +5,18 @@ import {
   loadLiveSnapshot,
   refreshLiveSnapshot,
 } from "./live-data.js";
+import { findNextMatch, getOrderedMatches, getTeamIdsInMatchOrder } from "./match-order.js";
 import { getCheckoutCopy, getOffer, PURCHASE_STATUS } from "./monetization.js";
 import { applySkin, getSkin, SKINS } from "./skins.js";
 import {
   loadState,
   setActiveSkin,
+  setEntitlements,
   setPurchaseStatus,
   setToolbarMatch,
   toggleWatchedMatch,
 } from "./state.js";
-import { PLACEHOLDER_FLAG_URL, getLocationFlagUrl } from "./flags.js";
+import { getLocationFlagUrl } from "./flags.js";
 
 const elements = {
   heroScore: document.querySelector("#heroScore"),
@@ -27,7 +29,9 @@ const elements = {
   skinFilter: document.querySelector("#skinFilter"),
   themeStage: document.querySelector("#themeStage"),
   purchaseStatus: document.querySelector("#purchaseStatus"),
+  licenseSupport: document.querySelector("#licenseSupport"),
   restoreButton: document.querySelector("#restoreButton"),
+  copyLicenseButton: document.querySelector("#copyLicenseButton"),
   favoritesOnly: document.querySelector("#favoritesOnly"),
   refreshButton: document.querySelector("#refreshButton"),
   tabs: document.querySelectorAll(".tab"),
@@ -40,21 +44,61 @@ let matches = liveSnapshot.matches;
 let previewSkinId = null;
 applySkin(appState.activeSkinId);
 
+function hasUnlockedEntitlements(entitlement = appState.entitlementCache) {
+  return Boolean(
+    entitlement?.all2026
+    || entitlement?.credits > 0
+    || (Array.isArray(entitlement?.skins) && entitlement.skins.some((skinId) => skinId !== "default"))
+  );
+}
+
 const MATCH_LOCATION_PRESETS = [
   {
-    keys: ["vancouver", "toronto", "montreal", "ottawa", "bc place"],
+    keys: ["vancouver", "toronto", "montreal", "ottawa", "bc place", "bmo field"],
     country: "Canada",
     flagUrl: getLocationFlagUrl("Canada"),
     background: "linear-gradient(128deg, rgba(255, 0, 0, 0.18), rgba(0, 80, 175, 0.16) 38%, rgba(250, 250, 250, 0.05) 72%)",
   },
   {
-    keys: ["mexico city", "monterrey", "guadalajara", "estadio", "zapopan", "guadalupe"],
+    keys: ["mexico city", "monterrey", "guadalajara", "estadio", "zapopan", "guadalupe", "azteca", "bbva", "akron"],
     country: "Mexico",
     flagUrl: getLocationFlagUrl("Mexico"),
     background: "linear-gradient(128deg, rgba(0, 104, 71, 0.24), rgba(206, 17, 38, 0.16) 40%, rgba(0, 47, 75, 0.09) 72%)",
   },
   {
-    keys: ["usa", "new york", "los angeles", "seattle", "dallas", "philadelphia", "houston", "boston", "atlanta", "miami", "kansas", "san francisco", "foxborough", "east rutherford", "santa clara"],
+    keys: [
+      "usa",
+      "new york",
+      "new jersey",
+      "los angeles",
+      "seattle",
+      "dallas",
+      "philadelphia",
+      "houston",
+      "boston",
+      "atlanta",
+      "miami",
+      "kansas",
+      "san francisco",
+      "foxborough",
+      "east rutherford",
+      "santa clara",
+      "arlington",
+      "inglewood",
+      "miami gardens",
+      "at&t",
+      "att stadium",
+      "metlife",
+      "lincoln financial",
+      "hard rock",
+      "mercedes-benz",
+      "sofi",
+      "lumen field",
+      "levi",
+      "arrowhead",
+      "nrg stadium",
+      "gillette",
+    ],
     country: "United States",
     flagUrl: getLocationFlagUrl("United States"),
     background: "linear-gradient(128deg, rgba(60, 59, 110, 0.22), rgba(178, 34, 52, 0.1) 42%, rgba(255, 255, 255, 0.05) 72%)",
@@ -67,19 +111,41 @@ function getMatchLocation(match = {}) {
 
   return preset || {
     country: "Location",
-    flagUrl: PLACEHOLDER_FLAG_URL,
+    flagUrl: null,
     background: "linear-gradient(128deg, rgba(18, 31, 40, 0.22), rgba(7, 24, 39, 0.05) 42%, rgba(255, 255, 255, 0.06) 72%)",
   };
 }
 
-function renderFlagIcon(src, alt = "", className = "") {
-  return `<img class="${className}" src="${src}" alt="${alt}" />`;
+function bindFlagFallbacks() {
+  const icons = document.querySelectorAll("img[data-flag-fallback]");
+  icons.forEach((icon) => {
+    if (icon.dataset.boundFallback === "1") return;
+
+    icon.addEventListener("error", () => {
+      const replacement = document.createElement("span");
+      replacement.className = `${icon.className} flag-fallback-label`.trim();
+      replacement.textContent = icon.dataset.fallbackLabel || "TBD";
+      replacement.setAttribute("aria-label", icon.alt || "Flag unavailable");
+      icon.replaceWith(replacement);
+    }, { once: true });
+
+    icon.dataset.boundFallback = "1";
+  });
+}
+
+function renderFlagIcon(src, alt = "", className = "", fallbackLabel = "TBD") {
+  if (!src) return "";
+  return `<img class="${className}" src="${src}" alt="${alt}" data-flag-fallback="1" data-fallback-label="${fallbackLabel}" loading="lazy" />`;
 }
 
 function renderTeamFlag(team, cssClass) {
-  const src = team?.flagUrl || PLACEHOLDER_FLAG_URL;
+  if (team?.isPlaceholder || team?.id === "tbd") {
+    return `<span class="${cssClass} is-placeholder"><span class="flag-fallback-label">TBD</span></span>`;
+  }
+
+  const src = team?.flagUrl || null;
   const alt = team?.name && team.name !== "TBD" ? `${team.name} flag` : "To be determined";
-  return `<span class="${cssClass}">${renderFlagIcon(src, alt, "flag-icon")}</span>`;
+  return `<span class="${cssClass}">${renderFlagIcon(src, alt, "flag-icon", team?.code || "TBD")}</span>`;
 }
 
 function getDisplayedSkin() {
@@ -119,19 +185,12 @@ function getVisibleMatches() {
     ? matches.filter((match) => appState.watchedMatchIds.includes(match.id))
     : matches;
 
-  return [...visible].sort((a, b) => {
-    if (a.status === b.status) {
-      return new Date(a.kickoff) - new Date(b.kickoff);
-    }
-    const order = { live: 0, upcoming: 1, final: 2 };
-    return order[a.status] - order[b.status];
-  });
+  return getOrderedMatches(visible);
 }
 
 function renderHero() {
   const featured = matches.find((match) => match.id === appState.toolbarMatchId)
-    || matches.find((match) => match.status === "live")
-    || matches.find((match) => match.status === "upcoming")
+    || findNextMatch(matches)
     || matches[0];
 
   if (!featured) {
@@ -167,14 +226,19 @@ function createMatchCard(match) {
   const isPinned = appState.toolbarMatchId === match.id;
   const location = getMatchLocation(match);
   const statusClass = match.status;
+  const locationFlagStyle = location.flagUrl ? `--match-location-flag-url:url('${location.flagUrl}');` : "";
+  const locationFlagClass = location.flagUrl ? "has-location-flag" : "";
+  const locationPill = location.flagUrl
+    ? `<span class="pill location-pill">${renderFlagIcon(location.flagUrl, `${location.country} flag`, "inline-flag", location.country)} ${location.country}</span>`
+    : "";
 
   return `
-    <article class="match-card is-${statusClass}" data-match-id="${match.id}" style="--match-location-flag-url:url('${location.flagUrl}'); --match-location-bg:${location.background};">
+    <article class="match-card is-${statusClass} ${locationFlagClass}" data-match-id="${match.id}" style="${locationFlagStyle} --match-location-bg:${location.background};">
       <div>
         <div class="match-meta">
           <span class="pill ${statusClass}">${statusLabel(match)}</span>
           <span class="pill">${match.stage}</span>
-          <span class="pill location-pill">${renderFlagIcon(location.flagUrl, `${location.country} flag`, "inline-flag")} ${location.country}</span>
+          ${locationPill}
           <span class="pill">${match.venue}</span>
         </div>
         <div class="teams-row">
@@ -206,7 +270,7 @@ function renderMatches() {
   const visibleMatches = getVisibleMatches();
   elements.matchList.innerHTML = visibleMatches.map(createMatchCard).join("");
 
-  const watched = matches.filter((match) => appState.watchedMatchIds.includes(match.id));
+  const watched = getOrderedMatches(matches.filter((match) => appState.watchedMatchIds.includes(match.id)));
   elements.watchlist.innerHTML = watched.map(createMatchCard).join("");
   elements.watchlistEmpty.classList.toggle("is-visible", watched.length === 0);
 }
@@ -223,6 +287,7 @@ function renderThemeStage() {
   const isActive = appState.activeSkinId === skin.id && !previewSkinId;
   const offer = getOffer("skin_single");
   const canUseCredit = !isUnlocked && appState.entitlementCache.credits > 0;
+  const previewMatch = findNextMatch(matches) || getOrderedMatches(matches)[0];
 
   const artwork = skin.id === "default"
     ? `<img class="theme-logo" src="assets/icon128.png" alt="Live Scoreboard 2026 icon">`
@@ -240,11 +305,11 @@ function renderThemeStage() {
         <p>${skin.culturalNote}</p>
       </div>
       <div class="mini-score-preview" aria-label="Sample themed score">
-        ${renderTeamFlag(matches[0]?.homeTeam, "mini-code")}
+        ${renderTeamFlag(previewMatch?.homeTeam, "mini-code")}
         <strong>2</strong>
         <i>78'</i>
         <strong>1</strong>
-        ${renderTeamFlag(matches[0]?.awayTeam, "mini-code")}
+        ${renderTeamFlag(previewMatch?.awayTeam, "mini-code")}
       </div>
       <div class="theme-stage-actions">
         ${isUnlocked && !isActive ? `<button type="button" data-apply-skin="${skin.id}">Apply theme</button>` : ""}
@@ -260,12 +325,22 @@ function renderThemeStage() {
 function getFilteredSkins() {
   const query = elements.skinSearch.value.trim().toLocaleLowerCase();
   const filter = elements.skinFilter.value;
+  const teamOrder = new Map(getTeamIdsInMatchOrder(matches).map((teamId, index) => [teamId, index]));
 
   return SKINS.filter((skin) => {
     const isUnlocked = appState.unlockedSkinIds.includes(skin.id);
     const matchesFilter = filter === "all" || (filter === "owned" ? isUnlocked : !isUnlocked);
     const haystack = `${skin.name} ${skin.team} ${skin.motif}`.toLocaleLowerCase();
     return matchesFilter && (!query || haystack.includes(query));
+  }).sort((a, b) => {
+    if (a.id === "default" || b.id === "default") {
+      return a.id === "default" ? -1 : 1;
+    }
+
+    const orderA = teamOrder.get(a.id) ?? Number.MAX_SAFE_INTEGER;
+    const orderB = teamOrder.get(b.id) ?? Number.MAX_SAFE_INTEGER;
+    if (orderA !== orderB) return orderA - orderB;
+    return a.team.localeCompare(b.team);
   });
 }
 
@@ -318,7 +393,12 @@ function renderPurchaseStatus() {
   } else if (appState.purchaseStatus === PURCHASE_STATUS.paid) {
     statusParts.push("Purchase received. Unlocks have been applied.");
   } else if (appState.purchaseStatus === PURCHASE_STATUS.restored) {
-    statusParts.push("Purchases restored. Your unlocks are up to date.");
+    const hasUnlock = hasUnlockedEntitlements(entitlement);
+    if (hasUnlock) {
+      statusParts.push("Purchases restored. Your unlocks are up to date.");
+    } else {
+      statusParts.push("No purchases found for this account yet.");
+    }
   } else if (appState.purchaseStatus === PURCHASE_STATUS.error) {
     statusParts.push("Checkout could not start. Try again or restore purchases later.");
   } else {
@@ -330,6 +410,13 @@ function renderPurchaseStatus() {
   }
 
   elements.purchaseStatus.textContent = statusParts.join(" ");
+
+  if (elements.licenseSupport) {
+    const licenseId = appState.licenseId || "";
+    const shortCode = licenseId ? `${licenseId.slice(0, 8)}...${licenseId.slice(-6)}` : "Unavailable";
+    elements.licenseSupport.textContent = `Support code: ${shortCode}`;
+    elements.licenseSupport.title = licenseId;
+  }
 }
 
 function renderAll() {
@@ -339,6 +426,7 @@ function renderAll() {
   renderThemeStage();
   renderSkins();
   renderPurchaseStatus();
+  bindFlagFallbacks();
 }
 
 function showToast(message) {
@@ -370,22 +458,65 @@ function startCheckout(itemType, itemId) {
     renderPurchaseStatus();
   });
 
-  sendRuntimeMessage(payload);
+  sendRuntimeMessage(payload).then((result) => {
+    if (!result?.ok) {
+      setPurchaseStatus(PURCHASE_STATUS.error, { sku: offer.sku, reason: result?.error || "checkout_start_failed" }).then((nextState) => {
+        appState = nextState;
+        renderPurchaseStatus();
+      });
+      showToast("Checkout failed to open. Please retry.");
+    }
+  });
   showToast(`Opening ${offer.label} in Stripe checkout.`);
 }
 
 async function restorePurchases() {
   appState = await setPurchaseStatus(PURCHASE_STATUS.pending, { restore: true });
   renderPurchaseStatus();
-  await sendRuntimeMessage({ type: "RESTORE_PURCHASES" });
-  showToast("Restoring purchases from your Stripe entitlement record.");
+  const result = await sendRuntimeMessage({ type: "RESTORE_PURCHASES" });
+  if (!result || result.ok === false) {
+    appState = await setPurchaseStatus(PURCHASE_STATUS.error, {
+      restore: true,
+      reason: result?.error || "restore_failed",
+    });
+    renderPurchaseStatus();
+    showToast("Restore failed. Check your network and try again.");
+    return;
+  }
+
+  if (result.entitlements) {
+    appState = await setEntitlements(result.entitlements, PURCHASE_STATUS.restored);
+  } else {
+    appState = await loadState();
+  }
+  renderAll();
+  if (result?.ok && hasUnlockedEntitlements(appState.entitlementCache)) {
+    showToast("Purchases restored successfully.");
+    return;
+  }
+
+  showToast("No active purchases found for this license.");
 }
 
 async function redeemSkinCredit(skinId) {
   appState = await setPurchaseStatus(PURCHASE_STATUS.pending, { redeemSkinId: skinId });
   renderPurchaseStatus();
-  await sendRuntimeMessage({ type: "REDEEM_SKIN", skinId });
-  showToast("Applying one skin credit.");
+  const result = await sendRuntimeMessage({ type: "REDEEM_SKIN", skinId });
+  if (!result || !result.ok) {
+    appState = await setPurchaseStatus(PURCHASE_STATUS.error, {
+      redeemSkinId: skinId,
+      reason: result?.error || "redeem_failed",
+    });
+    renderPurchaseStatus();
+    showToast("Redeem failed. Please try again after restoring purchases.");
+    return;
+  }
+
+  appState = result.entitlements
+    ? await setEntitlements(result.entitlements, PURCHASE_STATUS.restored)
+    : await loadState();
+  renderAll();
+  showToast("Skin unlocked from your credit pack.");
 }
 
 async function refreshLiveData({ announce = false } = {}) {
@@ -398,6 +529,12 @@ async function refreshLiveData({ announce = false } = {}) {
     if (announce) {
       showToast(liveSnapshot.stale ? "Live feed is unavailable. Showing the latest safe fallback." : "Scores are up to date.");
     }
+  } catch (error) {
+    console.error("Unable to refresh live data:", error);
+    elements.dataStatus.textContent = "Live feed unavailable. Showing latest cached snapshot.";
+    matches = liveSnapshot?.matches || matches;
+    renderAll();
+    showToast("Could not update live data right now. Showing fallback data.");
   } finally {
     elements.refreshButton.classList.remove("is-loading");
   }
@@ -405,9 +542,11 @@ async function refreshLiveData({ announce = false } = {}) {
 
 function sendRuntimeMessage(message) {
   if (typeof chrome !== "undefined" && chrome.runtime?.sendMessage) {
-    return chrome.runtime.sendMessage(message).catch(() => undefined);
+    return chrome.runtime.sendMessage(message)
+      .then((response) => response)
+      .catch(() => ({ ok: false, error: "runtime_unavailable" }));
   }
-  return Promise.resolve();
+  return Promise.resolve({ ok: false, error: "runtime_unavailable" });
 }
 
 elements.tabs.forEach((tab) => {
@@ -486,6 +625,20 @@ elements.refreshButton.addEventListener("click", () => refreshLiveData({ announc
 elements.skinSearch.addEventListener("input", renderSkins);
 elements.skinFilter.addEventListener("change", renderSkins);
 elements.restoreButton?.addEventListener("click", restorePurchases);
+elements.copyLicenseButton?.addEventListener("click", async () => {
+  const licenseId = appState.licenseId || "";
+  if (!licenseId) {
+    showToast("Support code is not available yet.");
+    return;
+  }
+
+  try {
+    await navigator.clipboard.writeText(licenseId);
+    showToast("Support code copied.");
+  } catch {
+    showToast("Could not copy support code automatically.");
+  }
+});
 
 renderAll();
 

@@ -36,6 +36,7 @@ export const PURCHASE_OFFERS = {
 };
 
 export const MONETIZATION_API_BASE = "https://kmtpuvtswatkilvkffqb.supabase.co/functions/v1";
+export const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImttdHB1dnRzd2F0a2lsdmtmZnFiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxMDEyOTIsImV4cCI6MjA5NzY3NzI5Mn0.h-OM4NcU08_bZWEtGTKGdbjBMOIxNwQ9XSgvCrOQiJ8";
 
 export function getOffer(sku) {
   return PURCHASE_OFFERS[sku] || PURCHASE_OFFERS.skin_single;

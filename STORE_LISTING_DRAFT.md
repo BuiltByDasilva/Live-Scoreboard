@@ -32,4 +32,4 @@ Live Scoreboard stores preferences and the last score snapshot locally using Chr
 
 ## Support note
 
-Before publication, replace this file with final support, privacy policy, live data provider, and payment disclosures.
+Public support, privacy, live data provider, and payment disclosures should stay aligned with the live Chrome Web Store listing and product site.

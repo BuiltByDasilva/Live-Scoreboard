@@ -4,13 +4,18 @@ import {
   loadLiveSnapshot,
   refreshLiveSnapshot,
 } from "./src/live-data.js";
-import { MONETIZATION_API_BASE, PURCHASE_OFFERS, PURCHASE_STATUS } from "./src/monetization.js";
+import { MONETIZATION_API_BASE, PURCHASE_OFFERS, PURCHASE_STATUS, SUPABASE_ANON_KEY } from "./src/monetization.js";
 import { loadState, saveState, saveLicenseId, setEntitlements, setPurchaseStatus } from "./src/state.js";
 import { getToolbarPresentation } from "./src/toolbar.js";
 
 const REFRESH_ALARM = "live-scoreboard-refresh";
 const REMINDER_ALARM = "live-scoreboard-reminders";
 const BADGE_RESET_ALARM = "live-scoreboard-badge-reset";
+
+const SUPABASE_FUNCTION_HEADERS = {
+  apikey: SUPABASE_ANON_KEY,
+  Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+};
 
 chrome.runtime.onInstalled.addListener(async () => {
   await chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
@@ -23,7 +28,9 @@ chrome.runtime.onStartup.addListener(async () => {
   await refreshAndUpdateBadge();
 });
 
-chrome.runtime.onMessage.addListener((message) => {
+chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  let responsePromise = null;
+
   if (message?.type === "WATCHLIST_UPDATED") {
     checkWatchlistReminders();
   }
@@ -33,16 +40,25 @@ chrome.runtime.onMessage.addListener((message) => {
   }
 
   if (message?.type === "START_CHECKOUT") {
-    void startCheckout(message);
+    responsePromise = startCheckout(message);
   }
 
   if (message?.type === "RESTORE_PURCHASES") {
-    void restorePurchases();
+    responsePromise = restorePurchases();
   }
 
   if (message?.type === "REDEEM_SKIN") {
-    void redeemSkin(message.skinId);
+    responsePromise = redeemSkin(message.skinId);
   }
+
+  if (!responsePromise) {
+    return false;
+  }
+
+  responsePromise
+    .then((response) => sendResponse(response))
+    .catch((error) => sendResponse({ ok: false, error: error?.message || "message_failed" }));
+  return true;
 });
 
 chrome.alarms.onAlarm.addListener(async (alarm) => {
@@ -155,14 +171,14 @@ async function startCheckout(message) {
 
   if (!Object.hasOwn(PURCHASE_OFFERS, payload.sku)) {
     await setPurchaseStatus(PURCHASE_STATUS.error, payload);
-    return;
+    return { ok: false, error: "invalid_checkout_request" };
   }
 
   await setPurchaseStatus(PURCHASE_STATUS.pending, payload);
   try {
     const response = await fetch(`${MONETIZATION_API_BASE}/checkout`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { ...SUPABASE_FUNCTION_HEADERS, "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
 
@@ -171,21 +187,32 @@ async function startCheckout(message) {
     const checkoutUrl = new URL(data.checkoutUrl);
     if (checkoutUrl.protocol !== "https:") throw new Error("Checkout URL must use HTTPS.");
     await chrome.tabs.create({ url: checkoutUrl.href });
+    return { ok: true, checkoutUrl: checkoutUrl.href };
   } catch {
     await setPurchaseStatus(PURCHASE_STATUS.error, payload);
+    return { ok: false, error: "checkout_request_failed" };
   }
 }
 
 async function restorePurchases() {
   const licenseId = await ensureLicenseId();
   try {
-    const response = await fetch(`${MONETIZATION_API_BASE}/entitlements/${licenseId}`, {
-      headers: { Accept: "application/json" },
+    const url = `${MONETIZATION_API_BASE}/entitlements/${encodeURIComponent(licenseId)}`;
+    const response = await fetch(url, {
+      headers: { ...SUPABASE_FUNCTION_HEADERS, Accept: "application/json" },
     });
     if (!response.ok) throw new Error(`Restore failed with ${response.status}.`);
-    await setEntitlements(await response.json(), PURCHASE_STATUS.restored);
+    const entitlements = await response.json();
+    await setEntitlements(entitlements, PURCHASE_STATUS.restored);
+    const hasUnlock = Boolean(
+      entitlements?.all2026
+      || (Array.isArray(entitlements?.skins) && entitlements.skins.some((skinId) => skinId !== "default"))
+      || (Number(entitlements?.credits) || 0) > 0
+    );
+    return { ok: true, restored: hasUnlock, entitlements };
   } catch {
     await setPurchaseStatus(PURCHASE_STATUS.error, { restore: true });
+    return { ok: false, error: "restore_request_failed" };
   }
 }
 
@@ -194,13 +221,16 @@ async function redeemSkin(skinId) {
   try {
     const response = await fetch(`${MONETIZATION_API_BASE}/entitlements/redeem`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { ...SUPABASE_FUNCTION_HEADERS, "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
     if (!response.ok) throw new Error(`Redemption failed with ${response.status}.`);
-    await setEntitlements(await response.json(), PURCHASE_STATUS.restored);
+    const entitlements = await response.json();
+    await setEntitlements(entitlements, PURCHASE_STATUS.restored);
+    return { ok: true, entitlements };
   } catch {
     await setPurchaseStatus(PURCHASE_STATUS.error, { redeemSkinId: skinId });
+    return { ok: false, error: "redeem_request_failed" };
   }
 }
 

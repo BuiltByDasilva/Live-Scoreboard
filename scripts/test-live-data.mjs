@@ -4,6 +4,7 @@ import {
   parseEspnMatches,
   refreshLiveSnapshot,
 } from "../src/live-data.js";
+import { findNextMatch, getOrderedMatches, getTeamIdsInMatchOrder } from "../src/match-order.js";
 import { getToolbarPresentation } from "../src/toolbar.js";
 
 const espnPayload = {
@@ -101,5 +102,44 @@ const offline = await refreshLiveSnapshot({
 });
 assert.equal(offline.degraded, true);
 assert.equal(offline.matches.some((match) => match.status === "live"), false);
+
+const nextOrderNow = new Date("2026-06-24T18:30:00Z").getTime();
+const staleScheduled = {
+  ...merged.matches[0],
+  id: "stale-scheduled",
+  home: "arg",
+  away: "aut",
+  homeTeam: { id: "arg", name: "Argentina", code: "ARG" },
+  awayTeam: { id: "aut", name: "Austria", code: "AUT" },
+  status: "upcoming",
+  kickoff: "2026-06-22T18:00:00Z",
+};
+const nextScheduled = {
+  ...merged.matches[0],
+  id: "next-scheduled",
+  home: "sui",
+  away: "can",
+  homeTeam: { id: "sui", name: "Switzerland", code: "SUI" },
+  awayTeam: { id: "can", name: "Canada", code: "CAN" },
+  status: "upcoming",
+  kickoff: "2026-06-24T19:00:00Z",
+};
+const laterScheduled = {
+  ...merged.matches[0],
+  id: "later-scheduled",
+  home: "sco",
+  away: "bra",
+  homeTeam: { id: "sco", name: "Scotland", code: "SCO" },
+  awayTeam: { id: "bra", name: "Brazil", code: "BRA" },
+  status: "upcoming",
+  kickoff: "2026-06-24T22:00:00Z",
+};
+const ordered = getOrderedMatches([staleScheduled, laterScheduled, nextScheduled], nextOrderNow);
+assert.deepEqual(ordered.map((match) => match.id), ["next-scheduled", "later-scheduled", "stale-scheduled"]);
+assert.equal(findNextMatch([staleScheduled, nextScheduled], nextOrderNow).id, "next-scheduled");
+assert.deepEqual(
+  getTeamIdsInMatchOrder([staleScheduled, laterScheduled, nextScheduled], nextOrderNow).slice(0, 4),
+  ["sui", "can", "sco", "bra"],
+);
 
 console.log("Live data parser, merge, goal detection, and outage fallbacks passed.");

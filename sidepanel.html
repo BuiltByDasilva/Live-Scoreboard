@@ -93,8 +93,14 @@
           </button>
         </section>
         <section class="purchase-strip" aria-label="Purchase status">
-          <p id="purchaseStatus">Secure checkout opens in Stripe. Unlocks appear automatically after payment.</p>
-          <button type="button" id="restoreButton">Restore purchases</button>
+          <div>
+            <p id="purchaseStatus">Secure checkout opens in Stripe. Unlocks appear automatically after payment.</p>
+            <p class="support-code" id="licenseSupport"></p>
+          </div>
+          <div class="purchase-actions">
+            <button type="button" id="restoreButton">Restore purchases</button>
+            <button type="button" id="copyLicenseButton">Copy support code</button>
+          </div>
         </section>
       </section>
 

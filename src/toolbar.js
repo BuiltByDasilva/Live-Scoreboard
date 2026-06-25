@@ -1,4 +1,5 @@
 import { getMatchFreshness } from "./live-data.js";
+import { findNextMatch } from "./match-order.js";
 
 function getToolbarTeamLabel(team) {
   return team?.code || team?.name || "TBD";
@@ -20,7 +21,7 @@ export function getToolbarPresentation(snapshot, state, now = Date.now()) {
   const liveCount = matches.filter((match) => match.status === "live").length;
 
   if (!selected) {
-    const next = matches.find((match) => match.status === "upcoming");
+    const next = findNextMatch(matches, now);
     return {
       badgeText: "",
       badgeColor: "#252925",

@@ -4,3 +4,6 @@ node_modules/
 .env.*
 *.log
 supabase/.temp/
+promo-video/frames/
+promo-video/test-frames/
+promo-video/test.mp4

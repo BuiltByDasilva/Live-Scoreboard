@@ -33,6 +33,18 @@ const NAME_ALIASES = new Map([
   ["usa", "usa"],
 ]);
 
+const TEAM_CODE_LOOKUP = TEAMS.map((team) => team.code);
+
+function normalizeLogoCode(logoUrl = "") {
+  const normalized = String(logoUrl || "").toLowerCase();
+  const match = normalized.match(/\/([a-z]{3})\.png(?:\?.*)?$/);
+  return match?.[1] || null;
+}
+
+function normalizeTeamCode(value = "") {
+  return String(value || "").toUpperCase().replace(/[^a-z]/gi, "");
+}
+
 function hasChromeStorage() {
   return typeof chrome !== "undefined" && chrome.storage?.local;
 }
@@ -73,14 +85,21 @@ function cleanName(value = "") {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase().trim();
 }
 
-function findTeam({ abbreviation, displayName }) {
-  if (isPlaceholderTeamLabel(displayName) || (!displayName && !abbreviation)) {
+function findTeam({ abbreviation, displayName, logo }) {
+  const cleanedDisplayName = isPlaceholderTeamLabel(displayName) ? "" : displayName;
+
+  if (!cleanedDisplayName && !abbreviation) {
     return createPlaceholderTeam();
   }
 
-  const code = abbreviation?.toLocaleUpperCase();
+  const logoCode = normalizeLogoCode(logo);
+  const code = normalizeTeamCode(abbreviation || logoCode || "");
+  const hasValidCode = /^[A-Z]{3}$/.test(code);
   const byCode = TEAMS.find((team) => team.code === code);
   if (byCode) return decorateTeam(byCode);
+
+  const byLogoCode = hasValidCode && TEAM_CODE_LOOKUP.includes(code) ? TEAMS.find((team) => team.code === code) : null;
+  if (byLogoCode) return decorateTeam(byLogoCode);
 
   const cleaned = cleanName(displayName);
   const aliasId = NAME_ALIASES.get(cleaned);
@@ -88,13 +107,15 @@ function findTeam({ abbreviation, displayName }) {
   const byName = TEAMS.find((team) => cleanName(team.name) === cleaned);
   if (byAlias || byName) return decorateTeam(byAlias || byName);
 
-  return decorateTeam({
-    id: `external-${cleaned.replace(/[^a-z0-9]+/g, "-")}`,
-    group: "",
-    name: displayName || code || "TBD",
-    code: code || "TBD",
-    colors: ["#64748b", "#f8fafc", "#334155"],
-  });
+  if (isPlaceholderTeamLabel(displayName)) {
+    return createPlaceholderTeam();
+  }
+
+  if (isPlaceholderTeamLabel(cleanedDisplayName) || !hasValidCode) {
+    return createPlaceholderTeam();
+  }
+
+  return createPlaceholderTeam();
 }
 
 function getStage(homeTeam, awayTeam) {

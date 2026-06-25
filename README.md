@@ -40,22 +40,21 @@ If npm is not available, run the validator directly with Node:
 node scripts/validate.mjs
 ```
 
-## Before marketplace launch
+## Production notes
 
 The development build uses ESPN's public scoreboard JSON as its live source and a bundled copy of OpenFootball's public-domain 2026 dataset for the complete schedule and outage fallback. It does not send browsing data, page content, or personal information to either source.
 
-Before marketplace publication, obtain written commercial-use approval for the live feed or switch the provider adapter in `src/live-data.js` to a licensed source. The public scoreboard endpoint is excellent for immediate product testing but is undocumented and should not be treated as a permanent commercial contract.
+For long-term production use, obtain written commercial-use approval for the live feed or switch the provider adapter in `src/live-data.js` to a licensed source. The public scoreboard endpoint is excellent for immediate product testing but is undocumented and should not be treated as a permanent commercial contract.
 
-Recommended production additions:
+Recommended follow-ups:
 
 - Licensed live-score API via the existing provider adapter and a small backend proxy so API keys are not exposed in the extension.
-- A completed live-mode Stripe test purchase to verify webhook fulfillment before public launch.
+- Ongoing live-mode Stripe checkout checks to verify webhook fulfillment.
 - Refund and support instructions for paid skin packs.
-- Store screenshots, 1280x800 promotional imagery, privacy policy, support URL, and test instructions.
 - Broader QA in Chrome stable, Edge, and at narrow side-panel widths.
 
 ## Theme art direction
 
 Each premium skin is an original visual system rather than a recolor. Themes use abstract cultural inspiration such as paper craft, landscape, tile geometry, weaving, gardens, music, and waterways. They do not include official federation crests, tournament marks, trophy artwork, kit replicas, copyrighted mascots, or claims of endorsement.
 
-Stripe Checkout, Supabase Edge Functions, and server-side entitlement records are connected for live-mode payments. Purchases should still be verified with an end-to-end checkout before submitting the production listing.
+Stripe Checkout, Supabase Edge Functions, and server-side entitlement records are connected for live-mode payments. Purchases should be checked periodically with end-to-end checkout and restore flows.
