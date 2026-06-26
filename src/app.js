@@ -1,5 +1,12 @@
 import {
-  getMatchFreshness,
+  detectPreferredLocale,
+  formatFreshness,
+  getLocale,
+  resolveLocaleId,
+  SUPPORTED_LOCALES,
+  t,
+} from "./i18n.js";
+import {
   getSafeBundledSnapshot,
   LIVE_CACHE_KEY,
   loadLiveSnapshot,
@@ -12,6 +19,7 @@ import {
   loadState,
   setActiveSkin,
   setEntitlements,
+  setLanguage,
   setPurchaseStatus,
   setToolbarMatch,
   toggleWatchedMatch,
@@ -33,16 +41,94 @@ const elements = {
   restoreButton: document.querySelector("#restoreButton"),
   copyLicenseButton: document.querySelector("#copyLicenseButton"),
   favoritesOnly: document.querySelector("#favoritesOnly"),
+  languageToggle: document.querySelector("#languageToggle"),
+  languageMenu: document.querySelector("#languageMenu"),
+  languageCurrent: document.querySelector("#languageCurrent"),
   refreshButton: document.querySelector("#refreshButton"),
   tabs: document.querySelectorAll(".tab"),
   panels: document.querySelectorAll(".panel")
 };
 
 let appState = await loadState();
+if (!appState.languageId) {
+  appState = await setLanguage(detectPreferredLocale());
+}
 let liveSnapshot = await loadLiveSnapshot() || getSafeBundledSnapshot();
 let matches = liveSnapshot.matches;
 let previewSkinId = null;
+let languageId = resolveLocaleId(appState.languageId);
 applySkin(appState.activeSkinId);
+
+function tr(key, vars) {
+  return t(languageId, key, vars);
+}
+
+function escapeAttribute(value = "") {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
+
+const WATCH_ICON = `
+  <svg class="button-symbol" aria-hidden="true" viewBox="0 0 24 24">
+    <path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9L12 3Z"/>
+  </svg>
+`;
+
+const PIN_ICON = `
+  <svg class="button-symbol" aria-hidden="true" viewBox="0 0 24 24">
+    <path d="M9 4h6l-1 7 3 3v2H7v-2l3-3-1-7Z"/>
+    <path d="M12 16v5"/>
+  </svg>
+`;
+
+function applyLocaleDocumentState() {
+  const locale = getLocale(languageId);
+  document.documentElement.lang = locale.locale;
+  document.documentElement.dir = locale.dir;
+}
+
+function renderStaticTranslations() {
+  document.querySelectorAll("[data-i18n]").forEach((node) => {
+    node.textContent = tr(node.dataset.i18n);
+  });
+  document.querySelectorAll("[data-i18n-placeholder]").forEach((node) => {
+    node.setAttribute("placeholder", tr(node.dataset.i18nPlaceholder));
+  });
+  document.querySelectorAll("[data-i18n-aria-label]").forEach((node) => {
+    node.setAttribute("aria-label", tr(node.dataset.i18nAriaLabel));
+  });
+  document.querySelectorAll("[data-i18n-title]").forEach((node) => {
+    node.setAttribute("title", tr(node.dataset.i18nTitle));
+  });
+}
+
+function setLanguageMenuOpen(isOpen) {
+  if (!elements.languageToggle || !elements.languageMenu) return;
+  elements.languageToggle.setAttribute("aria-expanded", String(isOpen));
+  elements.languageMenu.hidden = !isOpen;
+}
+
+function renderLanguageMenu() {
+  if (!elements.languageMenu) return;
+
+  const currentLocale = getLocale(languageId);
+  if (elements.languageCurrent) {
+    elements.languageCurrent.textContent = currentLocale.nativeName;
+  }
+
+  elements.languageMenu.innerHTML = SUPPORTED_LOCALES.map((locale) => {
+    const isActive = locale.id === languageId;
+    return `
+      <button class="language-option ${isActive ? "is-active" : ""}" type="button" role="option" data-language-option="${locale.id}" aria-selected="${isActive}">
+        <span>${locale.nativeName}</span>
+        <small>${locale.label}</small>
+      </button>
+    `;
+  }).join("");
+}
 
 function hasUnlockedEntitlements(entitlement = appState.entitlementCache) {
   return Boolean(
@@ -57,13 +143,13 @@ const MATCH_LOCATION_PRESETS = [
     keys: ["vancouver", "toronto", "montreal", "ottawa", "bc place", "bmo field"],
     country: "Canada",
     flagUrl: getLocationFlagUrl("Canada"),
-    background: "linear-gradient(128deg, rgba(255, 0, 0, 0.18), rgba(0, 80, 175, 0.16) 38%, rgba(250, 250, 250, 0.05) 72%)",
+    background: "linear-gradient(128deg, rgba(199, 87, 55, 0.18), rgba(125, 178, 188, 0.18) 44%, rgba(255, 248, 224, 0.78) 100%)",
   },
   {
     keys: ["mexico city", "monterrey", "guadalajara", "estadio", "zapopan", "guadalupe", "azteca", "bbva", "akron"],
     country: "Mexico",
     flagUrl: getLocationFlagUrl("Mexico"),
-    background: "linear-gradient(128deg, rgba(0, 104, 71, 0.24), rgba(206, 17, 38, 0.16) 40%, rgba(0, 47, 75, 0.09) 72%)",
+    background: "linear-gradient(128deg, rgba(96, 142, 73, 0.22), rgba(197, 91, 53, 0.16) 42%, rgba(255, 248, 224, 0.82) 100%)",
   },
   {
     keys: [
@@ -101,7 +187,7 @@ const MATCH_LOCATION_PRESETS = [
     ],
     country: "United States",
     flagUrl: getLocationFlagUrl("United States"),
-    background: "linear-gradient(128deg, rgba(60, 59, 110, 0.22), rgba(178, 34, 52, 0.1) 42%, rgba(255, 255, 255, 0.05) 72%)",
+    background: "linear-gradient(128deg, rgba(31, 76, 121, 0.2), rgba(184, 75, 54, 0.14) 42%, rgba(255, 248, 224, 0.8) 100%)",
   },
 ];
 
@@ -112,7 +198,7 @@ function getMatchLocation(match = {}) {
   return preset || {
     country: "Location",
     flagUrl: null,
-    background: "linear-gradient(128deg, rgba(18, 31, 40, 0.22), rgba(7, 24, 39, 0.05) 42%, rgba(255, 255, 255, 0.06) 72%)",
+    background: "linear-gradient(128deg, rgba(124, 180, 189, 0.2), rgba(236, 190, 100, 0.14) 42%, rgba(255, 248, 224, 0.82) 100%)",
   };
 }
 
@@ -124,8 +210,8 @@ function bindFlagFallbacks() {
     icon.addEventListener("error", () => {
       const replacement = document.createElement("span");
       replacement.className = `${icon.className} flag-fallback-label`.trim();
-      replacement.textContent = icon.dataset.fallbackLabel || "TBD";
-      replacement.setAttribute("aria-label", icon.alt || "Flag unavailable");
+      replacement.textContent = icon.dataset.fallbackLabel || tr("tbd");
+      replacement.setAttribute("aria-label", icon.alt || tr("flagUnavailable"));
       icon.replaceWith(replacement);
     }, { once: true });
 
@@ -140,20 +226,37 @@ function renderFlagIcon(src, alt = "", className = "", fallbackLabel = "TBD") {
 
 function renderTeamFlag(team, cssClass) {
   if (team?.isPlaceholder || team?.id === "tbd") {
-    return `<span class="${cssClass} is-placeholder"><span class="flag-fallback-label">TBD</span></span>`;
+    return `<span class="${cssClass} is-placeholder"><span class="flag-fallback-label">${tr("tbd")}</span></span>`;
   }
 
   const src = team?.flagUrl || null;
-  const alt = team?.name && team.name !== "TBD" ? `${team.name} flag` : "To be determined";
-  return `<span class="${cssClass}">${renderFlagIcon(src, alt, "flag-icon", team?.code || "TBD")}</span>`;
+  const alt = team?.name && team.name !== "TBD" ? `${team.name} flag` : tr("tbd");
+  return `<span class="${cssClass}">${renderFlagIcon(src, alt, "flag-icon", team?.code || tr("tbd"))}</span>`;
 }
 
 function getDisplayedSkin() {
   return getSkin(previewSkinId || appState.activeSkinId);
 }
 
+function renderSkinSymbols(skin, className = "skin-symbols") {
+  const symbols = skin?.symbols || {};
+  const entries = [
+    ["Animal", symbols.animal],
+    ["Myth", symbols.myth],
+    ["Fruit", symbols.fruit],
+  ].filter(([, value]) => value);
+
+  if (!entries.length) return "";
+
+  return `
+    <div class="${className}">
+      ${entries.map(([label, value]) => `<span><b>${label}</b>${value}</span>`).join("")}
+    </div>
+  `;
+}
+
 function formatKickoff(value) {
-  return new Intl.DateTimeFormat([], {
+  return new Intl.DateTimeFormat(getLocale(languageId).locale, {
     weekday: "short",
     hour: "numeric",
     minute: "2-digit"
@@ -162,11 +265,11 @@ function formatKickoff(value) {
 
 function statusLabel(match) {
   if (match.status === "live") {
-    return match.minute ? `LIVE ${match.minute}'` : `LIVE ${match.statusText || ""}`.trim();
+    return match.minute ? `${tr("livePrefix")} ${match.minute}'` : `${tr("livePrefix")} ${match.statusText || ""}`.trim();
   }
 
   if (match.status === "final") {
-    return "FT";
+    return tr("finalLabel");
   }
 
   return formatKickoff(match.kickoff);
@@ -174,10 +277,39 @@ function statusLabel(match) {
 
 function getScore(match) {
   if (match.status === "upcoming") {
-    return "-";
+    return "VS";
   }
 
   return `${match.homeScore}-${match.awayScore}`;
+}
+
+function formatKickoffTime(value) {
+  return new Intl.DateTimeFormat(getLocale(languageId).locale, {
+    hour: "numeric",
+    minute: "2-digit"
+  }).format(new Date(value));
+}
+
+function renderTimeBlock(match) {
+  if (match.status === "live") {
+    return `
+      <strong>${match.minute ? `${match.minute}'` : tr("livePrefix")}</strong>
+      <span>${tr("livePrefix")}</span>
+    `;
+  }
+
+  if (match.status === "final") {
+    return `
+      <strong>${tr("finalLabel")}</strong>
+      <span>${match.stage}</span>
+    `;
+  }
+
+  const [time, period = ""] = formatKickoffTime(match.kickoff).split(" ");
+  return `
+    <strong>${time}</strong>
+    <span>${period}</span>
+  `;
 }
 
 function getVisibleMatches() {
@@ -195,12 +327,21 @@ function renderHero() {
 
   if (!featured) {
     delete elements.heroScore.dataset.status;
-    elements.heroScore.innerHTML = `<div class="hero-content"><p class="quiet-note">No match data is available.</p></div>`;
+    elements.heroScore.innerHTML = `
+      <div class="hero-content"><p class="quiet-note">${tr("noMatchData")}</p></div>
+    `;
     return;
   }
 
   elements.heroScore.dataset.status = featured.status;
   elements.heroScore.innerHTML = `
+    <div class="hero-effects" aria-hidden="true">
+      <span class="floodlight floodlight-left"></span>
+      <span class="floodlight floodlight-right"></span>
+      <span class="light-trail trail-one"></span>
+      <span class="light-trail trail-two"></span>
+      <span class="orbit-ball"></span>
+    </div>
     <div class="hero-content">
       <div class="status-row">
         <span class="match-state ${featured.status}">${statusLabel(featured)}</span>
@@ -234,32 +375,36 @@ function createMatchCard(match) {
 
   return `
     <article class="match-card is-${statusClass} ${locationFlagClass}" data-match-id="${match.id}" style="${locationFlagStyle} --match-location-bg:${location.background};">
-      <div>
-        <div class="match-meta">
-          <span class="pill ${statusClass}">${statusLabel(match)}</span>
-          <span class="pill">${match.stage}</span>
-          ${locationPill}
-          <span class="pill">${match.venue}</span>
+      <div class="match-time" aria-label="${escapeAttribute(statusLabel(match))}">
+        ${renderTimeBlock(match)}
+      </div>
+      <div class="match-teams">
+        <div class="team-row">
+          ${renderTeamFlag(match.homeTeam, "mini-code team-flag")}
+          <span>${match.homeTeam.name}</span>
         </div>
-        <div class="teams-row">
-          <div class="team-row">
-            ${renderTeamFlag(match.homeTeam, "mini-code team-flag")}
-            <span>${match.homeTeam.name}</span>
-            <span class="team-score">${match.homeScore ?? "-"}</span>
-          </div>
-          <div class="team-row">
-            ${renderTeamFlag(match.awayTeam, "mini-code team-flag")}
-            <span>${match.awayTeam.name}</span>
-            <span class="team-score">${match.awayScore ?? "-"}</span>
-          </div>
+        <div class="team-row">
+          ${renderTeamFlag(match.awayTeam, "mini-code team-flag")}
+          <span>${match.awayTeam.name}</span>
         </div>
+      </div>
+      <div class="match-scoreboard" aria-label="${escapeAttribute(getScore(match))}">
+        <span>${match.status === "upcoming" ? "-" : (match.homeScore ?? "-")}</span>
+        <span>${match.status === "upcoming" ? "-" : (match.awayScore ?? "-")}</span>
+      </div>
+      <div class="match-venue">
+        ${locationPill || `<span class="venue-dot"></span>`}
+        <strong>${match.venue}</strong>
+        <span>${match.location || location.country}</span>
       </div>
       <div class="match-actions">
         <button class="match-action ${isWatched ? "is-on" : ""}" type="button" data-watch="${match.id}" aria-pressed="${isWatched}">
-          ${isWatched ? "Watching" : "Watch"}
+          ${WATCH_ICON}
+          ${isWatched ? tr("watching") : tr("watch")}
         </button>
-        <button class="match-action ${isPinned ? "is-on" : ""}" type="button" data-pin="${match.id}" aria-pressed="${isPinned}" title="Show this match in the Chrome toolbar">
-          ${isPinned ? "In toolbar" : "Pin score"}
+        <button class="match-action ${isPinned ? "is-on" : ""}" type="button" data-pin="${match.id}" aria-pressed="${isPinned}" title="${escapeAttribute(tr("pinTitle"))}">
+          ${PIN_ICON}
+          ${isPinned ? tr("inToolbar") : tr("pinScore")}
         </button>
       </div>
     </article>
@@ -276,9 +421,11 @@ function renderMatches() {
 }
 
 function renderDataStatus() {
-  elements.dataStatus.textContent = `${liveSnapshot.stale ? "Cached data" : "Live data"} · ${getMatchFreshness(liveSnapshot)}`;
+  elements.dataStatus.textContent = liveSnapshot.stale
+    ? `${tr("cachedData")} ${tr("connectedStatus")}`
+    : `${tr("liveData")} ${tr("connectedStatus")}`;
   elements.dataStatus.classList.toggle("is-stale", Boolean(liveSnapshot.stale));
-  elements.dataStatus.title = liveSnapshot.error || `${liveSnapshot.provider} is connected.`;
+  elements.dataStatus.title = `${formatFreshness(languageId, liveSnapshot)} · ${liveSnapshot.error || tr("providerConnected", { provider: liveSnapshot.provider })}`;
 }
 
 function renderThemeStage() {
@@ -290,21 +437,23 @@ function renderThemeStage() {
   const previewMatch = findNextMatch(matches) || getOrderedMatches(matches)[0];
 
   const artwork = skin.id === "default"
-    ? `<img class="theme-logo" src="assets/icon128.png" alt="Live Scoreboard 2026 icon">`
+    ? `<img class="theme-logo" src="assets/icon128.png" alt="${escapeAttribute(tr("themeIconAlt"))}">`
     : `<span class="theme-code">${skin.code}</span>`;
 
   elements.themeStage.innerHTML = `
     <div class="theme-art" style="--card-pattern:${skin.pattern}">
       ${artwork}
       <span class="theme-motif">${skin.motif}</span>
+      ${renderSkinSymbols(skin, "theme-symbols")}
     </div>
     <div class="theme-stage-copy">
       <div>
         <p class="theme-team">${skin.team}</p>
         <h2>${skin.name}</h2>
         <p>${skin.culturalNote}</p>
+        ${renderSkinSymbols(skin)}
       </div>
-      <div class="mini-score-preview" aria-label="Sample themed score">
+      <div class="mini-score-preview" aria-label="${escapeAttribute(tr("sampleScoreAria"))}">
         ${renderTeamFlag(previewMatch?.homeTeam, "mini-code")}
         <strong>2</strong>
         <i>78'</i>
@@ -312,11 +461,11 @@ function renderThemeStage() {
         ${renderTeamFlag(previewMatch?.awayTeam, "mini-code")}
       </div>
       <div class="theme-stage-actions">
-        ${isUnlocked && !isActive ? `<button type="button" data-apply-skin="${skin.id}">Apply theme</button>` : ""}
-        ${canUseCredit ? `<button type="button" data-redeem-skin="${skin.id}" class="primary">Use 1 skin credit</button>` : ""}
+        ${isUnlocked && !isActive ? `<button type="button" data-apply-skin="${skin.id}">${tr("applyTheme")}</button>` : ""}
+        ${canUseCredit ? `<button type="button" data-redeem-skin="${skin.id}" class="primary">${tr("useOneSkinCredit")}</button>` : ""}
         ${!isUnlocked && !canUseCredit ? `<button type="button" data-buy-skin="${skin.id}" class="primary">${getCheckoutCopy(offer.sku)}</button>` : ""}
-        ${previewSkinId ? `<button type="button" data-cancel-preview>Back to active</button>` : ""}
-        ${isActive ? `<span class="applied-state">Applied</span>` : ""}
+        ${previewSkinId ? `<button type="button" data-cancel-preview>${tr("backToActive")}</button>` : ""}
+        ${isActive ? `<span class="applied-state">${tr("applied")}</span>` : ""}
       </div>
     </div>
   `;
@@ -352,7 +501,7 @@ function renderSkins() {
     const isPreviewing = previewSkinId === skin.id && !isUnlocked;
     const isActive = appState.activeSkinId === skin.id && !previewSkinId;
     const canUseCredit = !isUnlocked && appState.entitlementCache.credits > 0;
-    const label = isPreviewing ? "Previewing" : isActive ? "Active" : isUnlocked ? "Apply" : "Preview";
+    const label = isPreviewing ? tr("previewing") : isActive ? tr("active") : isUnlocked ? tr("apply") : tr("preview");
     const action = isUnlocked ? "apply-skin" : "preview-skin";
 
     const thumbnail = skin.id === "default"
@@ -361,25 +510,26 @@ function renderSkins() {
 
     return `
       <article class="skin-card ${isActive || isSelected ? "is-selected" : ""}">
-        <button class="skin-art" type="button" data-preview-skin="${skin.id}" aria-label="Preview ${skin.name}" style="--card-pattern:${skin.pattern}">
+        <button class="skin-art" type="button" data-preview-skin="${skin.id}" aria-label="${escapeAttribute(tr("previewSkinAria", { skin: skin.name }))}" style="--card-pattern:${skin.pattern}">
           ${thumbnail}
         </button>
         <div class="skin-copy">
           <p class="skin-team">${skin.team}</p>
           <h3>${skin.name}</h3>
           <p>${skin.motif}</p>
+          ${renderSkinSymbols(skin, "skin-symbols compact")}
         </div>
         <div class="skin-card-actions">
           <button class="skin-action ${isActive || isPreviewing ? "is-on" : ""}" type="button" data-${action}="${skin.id}">
             ${label}
           </button>
-          ${canUseCredit ? `<button class="skin-price" type="button" data-redeem-skin="${skin.id}" aria-label="Use one skin credit to unlock ${skin.name}">Use credit</button>` : ""}
-          ${!isUnlocked && !canUseCredit ? `<button class="skin-price" type="button" data-buy-skin="${skin.id}" aria-label="Unlock ${skin.name} for $0.99">$0.99</button>` : ""}
-          ${isUnlocked ? `<span class="owned-label">Owned</span>` : ""}
+          ${canUseCredit ? `<button class="skin-price" type="button" data-redeem-skin="${skin.id}" aria-label="${escapeAttribute(tr("useCreditAria", { skin: skin.name }))}">${tr("useCredit")}</button>` : ""}
+          ${!isUnlocked && !canUseCredit ? `<button class="skin-price" type="button" data-buy-skin="${skin.id}" aria-label="${escapeAttribute(tr("unlockSkinAria", { skin: skin.name }))}">$0.99</button>` : ""}
+          ${isUnlocked ? `<span class="owned-label">${tr("owned")}</span>` : ""}
         </div>
       </article>
     `;
-  }).join("") || `<div class="skin-empty"><strong>No themes found.</strong><span>Try another country or collection filter.</span></div>`;
+  }).join("") || `<div class="skin-empty"><strong>${tr("noThemesTitle")}</strong><span>${tr("noThemesCopy")}</span></div>`;
 }
 
 function renderPurchaseStatus() {
@@ -389,37 +539,42 @@ function renderPurchaseStatus() {
   const statusParts = [];
 
   if (appState.purchaseStatus === PURCHASE_STATUS.pending) {
-    statusParts.push("Stripe checkout is open and waiting for payment.");
+    statusParts.push(tr("checkoutPending"));
   } else if (appState.purchaseStatus === PURCHASE_STATUS.paid) {
-    statusParts.push("Purchase received. Unlocks have been applied.");
+    statusParts.push(tr("purchaseReceived"));
   } else if (appState.purchaseStatus === PURCHASE_STATUS.restored) {
     const hasUnlock = hasUnlockedEntitlements(entitlement);
     if (hasUnlock) {
-      statusParts.push("Purchases restored. Your unlocks are up to date.");
+      statusParts.push(tr("purchasesRestored"));
     } else {
-      statusParts.push("No purchases found for this account yet.");
+      statusParts.push(tr("noPurchasesFound"));
     }
   } else if (appState.purchaseStatus === PURCHASE_STATUS.error) {
-    statusParts.push("Checkout could not start. Try again or restore purchases later.");
+    statusParts.push(tr("checkoutCouldNotStart"));
   } else {
-    statusParts.push("Secure checkout opens in Stripe. Purchases unlock automatically after payment.");
+    statusParts.push(tr("purchaseDefault"));
   }
 
   if (entitlement.credits > 0) {
-    statusParts.push(`${entitlement.credits} skin credit${entitlement.credits === 1 ? "" : "s"} remaining.`);
+    statusParts.push(entitlement.credits === 1
+      ? tr("creditRemainingOne")
+      : tr("creditRemainingMany", { count: entitlement.credits }));
   }
 
   elements.purchaseStatus.textContent = statusParts.join(" ");
 
   if (elements.licenseSupport) {
     const licenseId = appState.licenseId || "";
-    const shortCode = licenseId ? `${licenseId.slice(0, 8)}...${licenseId.slice(-6)}` : "Unavailable";
-    elements.licenseSupport.textContent = `Support code: ${shortCode}`;
+    const shortCode = licenseId ? `${licenseId.slice(0, 8)}...${licenseId.slice(-6)}` : tr("unavailable");
+    elements.licenseSupport.textContent = tr("supportCode", { code: shortCode });
     elements.licenseSupport.title = licenseId;
   }
 }
 
 function renderAll() {
+  applyLocaleDocumentState();
+  renderStaticTranslations();
+  renderLanguageMenu();
   renderDataStatus();
   renderHero();
   renderMatches();
@@ -464,10 +619,10 @@ function startCheckout(itemType, itemId) {
         appState = nextState;
         renderPurchaseStatus();
       });
-      showToast("Checkout failed to open. Please retry.");
+      showToast(tr("checkoutFailedToast"));
     }
   });
-  showToast(`Opening ${offer.label} in Stripe checkout.`);
+  showToast(tr("openingCheckoutToast", { offer: offer.label }));
 }
 
 async function restorePurchases() {
@@ -480,7 +635,7 @@ async function restorePurchases() {
       reason: result?.error || "restore_failed",
     });
     renderPurchaseStatus();
-    showToast("Restore failed. Check your network and try again.");
+    showToast(tr("restoreFailedToast"));
     return;
   }
 
@@ -491,11 +646,11 @@ async function restorePurchases() {
   }
   renderAll();
   if (result?.ok && hasUnlockedEntitlements(appState.entitlementCache)) {
-    showToast("Purchases restored successfully.");
+    showToast(tr("restoredToast"));
     return;
   }
 
-  showToast("No active purchases found for this license.");
+  showToast(tr("noActivePurchasesToast"));
 }
 
 async function redeemSkinCredit(skinId) {
@@ -508,7 +663,7 @@ async function redeemSkinCredit(skinId) {
       reason: result?.error || "redeem_failed",
     });
     renderPurchaseStatus();
-    showToast("Redeem failed. Please try again after restoring purchases.");
+    showToast(tr("redeemFailedToast"));
     return;
   }
 
@@ -516,7 +671,7 @@ async function redeemSkinCredit(skinId) {
     ? await setEntitlements(result.entitlements, PURCHASE_STATUS.restored)
     : await loadState();
   renderAll();
-  showToast("Skin unlocked from your credit pack.");
+  showToast(tr("skinUnlockedToast"));
 }
 
 async function refreshLiveData({ announce = false } = {}) {
@@ -527,14 +682,14 @@ async function refreshLiveData({ announce = false } = {}) {
     renderAll();
     await sendRuntimeMessage({ type: "SCOREBOARD_REFRESHED" });
     if (announce) {
-      showToast(liveSnapshot.stale ? "Live feed is unavailable. Showing the latest safe fallback." : "Scores are up to date.");
+      showToast(liveSnapshot.stale ? tr("liveUnavailableToast") : tr("scoresUpToDateToast"));
     }
   } catch (error) {
     console.error("Unable to refresh live data:", error);
-    elements.dataStatus.textContent = "Live feed unavailable. Showing latest cached snapshot.";
+    elements.dataStatus.textContent = tr("liveUnavailableToast");
     matches = liveSnapshot?.matches || matches;
     renderAll();
-    showToast("Could not update live data right now. Showing fallback data.");
+    showToast(tr("updateFailedToast"));
   } finally {
     elements.refreshButton.classList.remove("is-loading");
   }
@@ -562,6 +717,8 @@ elements.tabs.forEach((tab) => {
 });
 
 document.addEventListener("click", async (event) => {
+  const languageToggle = event.target.closest("#languageToggle");
+  const languageOption = event.target.closest("[data-language-option]");
   const watchButton = event.target.closest("[data-watch]");
   const pinButton = event.target.closest("[data-pin]");
   const applyButton = event.target.closest("[data-apply-skin]");
@@ -570,6 +727,23 @@ document.addEventListener("click", async (event) => {
   const buyButton = event.target.closest("[data-buy-skin]");
   const redeemButton = event.target.closest("[data-redeem-skin]");
   const bundleButton = event.target.closest("[data-bundle]");
+
+  if (languageToggle) {
+    setLanguageMenuOpen(elements.languageMenu?.hidden ?? true);
+    return;
+  }
+
+  if (languageOption) {
+    appState = await setLanguage(languageOption.dataset.languageOption);
+    languageId = resolveLocaleId(appState.languageId);
+    setLanguageMenuOpen(false);
+    renderAll();
+    return;
+  }
+
+  if (!event.target.closest(".language-dock")) {
+    setLanguageMenuOpen(false);
+  }
 
   if (watchButton) {
     appState = await toggleWatchedMatch(watchButton.dataset.watch);
@@ -628,15 +802,21 @@ elements.restoreButton?.addEventListener("click", restorePurchases);
 elements.copyLicenseButton?.addEventListener("click", async () => {
   const licenseId = appState.licenseId || "";
   if (!licenseId) {
-    showToast("Support code is not available yet.");
+    showToast(tr("supportCodeUnavailableToast"));
     return;
   }
 
   try {
     await navigator.clipboard.writeText(licenseId);
-    showToast("Support code copied.");
+    showToast(tr("supportCodeCopiedToast"));
   } catch {
-    showToast("Could not copy support code automatically.");
+    showToast(tr("copySupportFailedToast"));
+  }
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    setLanguageMenuOpen(false);
   }
 });
 
@@ -657,6 +837,7 @@ if (typeof chrome !== "undefined" && chrome.storage?.onChanged) {
     if (areaName === "local" || areaName === "sync") {
       loadState().then((nextState) => {
         appState = nextState;
+        languageId = resolveLocaleId(appState.languageId);
         applySkin(appState.activeSkinId);
         renderAll();
       });

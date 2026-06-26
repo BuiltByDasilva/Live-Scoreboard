@@ -6,7 +6,7 @@ import {
 } from "./src/live-data.js";
 import { MONETIZATION_API_BASE, PURCHASE_OFFERS, PURCHASE_STATUS, SUPABASE_ANON_KEY } from "./src/monetization.js";
 import { loadState, saveState, saveLicenseId, setEntitlements, setPurchaseStatus } from "./src/state.js";
-import { getToolbarPresentation } from "./src/toolbar.js";
+import { getToolbarIconImageData, getToolbarPresentation } from "./src/toolbar.js";
 
 const REFRESH_ALARM = "live-scoreboard-refresh";
 const REMINDER_ALARM = "live-scoreboard-reminders";
@@ -116,10 +116,14 @@ async function updateBadgeFromCache() {
 async function updateBadge(snapshot) {
   const state = await loadState();
   const presentation = getToolbarPresentation(snapshot, state);
+  const iconImageData = getToolbarIconImageData(presentation.iconMatch);
   await chrome.action.setBadgeText({ text: presentation.badgeText });
   await chrome.action.setBadgeBackgroundColor({ color: presentation.badgeColor });
   await chrome.action.setBadgeTextColor({ color: presentation.badgeColor === "#b8ff16" ? "#090b09" : "#ffffff" });
   await chrome.action.setTitle({ title: presentation.title });
+  if (iconImageData) {
+    await chrome.action.setIcon({ imageData: iconImageData });
+  }
 }
 
 async function checkWatchlistReminders() {

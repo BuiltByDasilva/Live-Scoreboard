@@ -15,6 +15,7 @@ const requiredFiles = [
   "supabase/migrations/202606220001_create_monetization.sql",
   "src/app.js",
   "src/data.js",
+  "src/i18n.js",
   "src/live-data.js",
   "src/match-order.js",
   "src/monetization.js",
@@ -53,6 +54,7 @@ if (JSON.stringify(manifest.host_permissions) !== JSON.stringify(expectedHosts))
 }
 
 const dataModule = await import(path.join(root, "src/data.js"));
+const i18nModule = await import(path.join(root, "src/i18n.js"));
 const skinsModule = await import(path.join(root, "src/skins.js"));
 const liveDataModule = await import(path.join(root, "src/live-data.js"));
 const monetizationModule = await import(path.join(root, "src/monetization.js"));
@@ -78,6 +80,12 @@ for (const skin of premiumSkins) {
     throw new Error(`Skin ${skin.id} is missing theme artwork metadata.`);
   }
 
+  for (const symbolField of ["animal", "myth", "fruit"]) {
+    if (!skin.symbols?.[symbolField]) {
+      throw new Error(`Skin ${skin.id} is missing ${symbolField} identity metadata.`);
+    }
+  }
+
   if (!skin.description.includes(skin.team)) {
     throw new Error(`Skin ${skin.id} must identify its country inspiration.`);
   }
@@ -90,9 +98,30 @@ for (const id of ["skinList", "skinSearch", "skinFilter", "themeStage"]) {
   }
 }
 
+for (const id of ["languageToggle", "languageMenu"]) {
+  if (!html.includes(`id="${id}"`)) {
+    throw new Error(`Missing language control element: ${id}.`);
+  }
+}
+
 for (const id of ["purchaseStatus", "restoreButton"]) {
   if (!html.includes(`id="${id}"`)) {
     throw new Error(`Missing purchase interface element: ${id}.`);
+  }
+}
+
+const targetLocaleIds = ["en", "es", "pt", "ar", "fr"];
+const supportedLocaleIds = i18nModule.SUPPORTED_LOCALES.map((locale) => locale.id);
+if (JSON.stringify(supportedLocaleIds) !== JSON.stringify(targetLocaleIds)) {
+  throw new Error(`Supported locales must stay focused on the top-five target set: ${targetLocaleIds.join(", ")}.`);
+}
+
+const messageKeys = i18nModule.getMessageKeys();
+for (const localeId of new Set(supportedLocaleIds)) {
+  for (const key of messageKeys) {
+    if (!i18nModule.MESSAGES[localeId]?.[key]) {
+      throw new Error(`Missing i18n message ${key} for ${localeId}.`);
+    }
   }
 }
 

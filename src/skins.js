@@ -51,6 +51,57 @@ const THEME_STORIES = {
   pan: ["Canal Carnival", "two oceans, one party", "canal", "Curving waterways and confetti-like shapes meet in the middle."],
 };
 
+const THEME_SYMBOLS = {
+  mex: { animal: "Jaguar", myth: "Feathered serpent", fruit: "Prickly pear" },
+  rsa: { animal: "Springbok", myth: "Rain queen", fruit: "Marula" },
+  kor: { animal: "Tiger", myth: "Haetae", fruit: "Persimmon" },
+  cze: { animal: "Lion", myth: "Golem", fruit: "Plum" },
+  can: { animal: "Beaver", myth: "Northern spirit", fruit: "Blueberry" },
+  qat: { animal: "Falcon", myth: "Djinn", fruit: "Date" },
+  sui: { animal: "Ibex", myth: "Alpine giant", fruit: "Apple" },
+  bih: { animal: "Bear", myth: "Dragon", fruit: "Plum" },
+  bra: { animal: "Jaguar", myth: "Curupira", fruit: "Acai" },
+  mar: { animal: "Atlas lion", myth: "Aisha Qandisha", fruit: "Orange" },
+  hai: { animal: "Parrot", myth: "Loup-garou", fruit: "Mango" },
+  sco: { animal: "Stag", myth: "Kelpie", fruit: "Raspberry" },
+  usa: { animal: "Eagle", myth: "Thunderbird", fruit: "Apple" },
+  aus: { animal: "Kangaroo", myth: "Bunyip", fruit: "Finger lime" },
+  tur: { animal: "Grey wolf", myth: "Shahmaran", fruit: "Fig" },
+  par: { animal: "Jaguar", myth: "Pombero", fruit: "Pineapple" },
+  ger: { animal: "Eagle", myth: "Lorelei", fruit: "Apple" },
+  cur: { animal: "Flamingo", myth: "Sea spirit", fruit: "Tamarind" },
+  civ: { animal: "Elephant", myth: "Anansi", fruit: "Cacao" },
+  ecu: { animal: "Condor", myth: "Mountain guardian", fruit: "Passion fruit" },
+  ned: { animal: "Lion", myth: "Sea maiden", fruit: "Apple" },
+  jpn: { animal: "Crane", myth: "Kitsune", fruit: "Persimmon" },
+  swe: { animal: "Elk", myth: "Tomte", fruit: "Lingonberry" },
+  tun: { animal: "Falcon", myth: "Desert djinn", fruit: "Date" },
+  bel: { animal: "Lion", myth: "Lange Wapper", fruit: "Pear" },
+  egy: { animal: "Falcon", myth: "Sphinx", fruit: "Date" },
+  irn: { animal: "Lion", myth: "Simurgh", fruit: "Pomegranate" },
+  nzl: { animal: "Kiwi", myth: "Taniwha", fruit: "Kiwifruit" },
+  esp: { animal: "Bull", myth: "Dragon", fruit: "Orange" },
+  cpv: { animal: "Sea turtle", myth: "Mermaid", fruit: "Banana" },
+  ksa: { animal: "Falcon", myth: "Djinn", fruit: "Date" },
+  uru: { animal: "Rhea", myth: "Lobizon", fruit: "Grape" },
+  fra: { animal: "Rooster", myth: "Gargoyle", fruit: "Grape" },
+  sen: { animal: "Lion", myth: "Kankurang", fruit: "Baobab fruit" },
+  irq: { animal: "Lion", myth: "Lamassu", fruit: "Date" },
+  nor: { animal: "Elk", myth: "Huldra", fruit: "Cloudberry" },
+  arg: { animal: "Puma", myth: "Nahuelito", fruit: "Grape" },
+  aut: { animal: "Eagle", myth: "Lindworm", fruit: "Apricot" },
+  alg: { animal: "Fennec", myth: "Djinn", fruit: "Fig" },
+  jor: { animal: "Oryx", myth: "Djinn", fruit: "Date" },
+  por: { animal: "Rooster", myth: "Enchanted moura", fruit: "Grape" },
+  cod: { animal: "Okapi", myth: "River spirit", fruit: "Banana" },
+  uzb: { animal: "Snow leopard", myth: "Simurgh", fruit: "Melon" },
+  col: { animal: "Condor", myth: "El Dorado", fruit: "Passion fruit" },
+  eng: { animal: "Lion", myth: "Green man", fruit: "Apple" },
+  cro: { animal: "Marten", myth: "Vila", fruit: "Fig" },
+  gha: { animal: "Leopard", myth: "Anansi", fruit: "Cacao" },
+  pan: { animal: "Harpy eagle", myth: "Cadejo", fruit: "Pineapple" },
+};
+
 const PATTERNS = {
   papel: (a, b, c) => `linear-gradient(135deg, transparent 0 42%, ${c} 43% 56%, transparent 57%), repeating-linear-gradient(45deg, ${a} 0 14px, ${b} 14px 28px)`,
   mosaic: (a, b, c) => `conic-gradient(from 45deg at 25% 25%, ${a} 0 25%, ${b} 0 50%, ${c} 0 75%, ${a} 0)`,
@@ -104,15 +155,16 @@ const PATTERNS = {
 
 export const DEFAULT_SKIN = {
   id: "default",
-  name: "Neon Matchday",
+  name: "Retro Stadium Neon",
   team: "Live Scoreboard",
   code: "26",
   price: "Included",
-  colors: ["#b8ff16", "#f4efdf", "#ff5d4d"],
-  description: "The signature Live Scoreboard matchday theme.",
-  motif: "electric night football",
-  culturalNote: "An original Live Scoreboard design.",
-  pattern: "radial-gradient(circle at 50% 38%, rgba(184, 255, 22, 0.28), transparent 34%), linear-gradient(145deg, #151915, #070908 62%, #24100e)",
+  colors: ["#c94616", "#f7e9bd", "#007d9b"],
+  description: "The signature parchment-and-neon Live Scoreboard theme.",
+  motif: "stadium lights and matchday print",
+  culturalNote: "An original Live Scoreboard poster-style design.",
+  symbols: { animal: "Match ball", myth: "Neon comet", fruit: "Victory citrus" },
+  pattern: "radial-gradient(circle at 50% 38%, rgba(0, 234, 255, 0.32), transparent 34%), linear-gradient(145deg, #f7e9bd, #0c5261 62%, #6ea117)",
 };
 
 export const SKINS = [
@@ -129,6 +181,7 @@ export const SKINS = [
       description: `${team.name}-inspired ${motif}.`,
       motif,
       culturalNote,
+      symbols: THEME_SYMBOLS[team.id],
       pattern: PATTERNS[patternKey](...team.colors),
       patternKey,
     };
@@ -139,8 +192,57 @@ export function getSkin(skinId) {
   return SKINS.find((skin) => skin.id === skinId) || DEFAULT_SKIN;
 }
 
+function hexToRgb(hex) {
+  const normalized = hex.replace("#", "");
+  if (normalized.length !== 6) return { r: 0, g: 125, b: 155 };
+
+  return {
+    r: Number.parseInt(normalized.slice(0, 2), 16),
+    g: Number.parseInt(normalized.slice(2, 4), 16),
+    b: Number.parseInt(normalized.slice(4, 6), 16),
+  };
+}
+
+function luminance(hex) {
+  const { r, g, b } = hexToRgb(hex);
+  return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+}
+
+function chooseAccent(colors, fallback, prefer = "dark") {
+  const candidates = colors.filter((color) => {
+    const lightness = luminance(color);
+    return prefer === "dark" ? lightness < 0.88 : lightness > 0.24;
+  });
+
+  return candidates[0] || colors[0] || fallback;
+}
+
+function getSkinSystem(skin) {
+  const colors = skin.colors?.length ? skin.colors : DEFAULT_SKIN.colors;
+  const warm = chooseAccent(colors, "#c94616", "dark");
+  const cool = [...colors].reverse().find((color) => color !== warm && luminance(color) < 0.86) || "#007d9b";
+  const glow = colors.find((color) => color !== warm && color !== cool) || "#f7e9bd";
+
+  return {
+    warm,
+    cool,
+    glow,
+    paper: `color-mix(in srgb, ${glow} 18%, #f7e9bd)`,
+    paperDeep: `color-mix(in srgb, ${warm} 14%, #e6cf92)`,
+    paperSoft: `color-mix(in srgb, ${glow} 12%, #fff3cf)`,
+    paperLine: `color-mix(in srgb, ${warm} 30%, #c7aa6f)`,
+    live: `color-mix(in srgb, ${warm} 76%, #c94616)`,
+    liveHot: `color-mix(in srgb, ${warm} 56%, #f36b16)`,
+    teal: `color-mix(in srgb, ${cool} 68%, #007d9b)`,
+    cyan: `color-mix(in srgb, ${cool} 42%, #00eaff)`,
+    grass: `color-mix(in srgb, ${glow} 24%, #6ea117)`,
+    stadium: `color-mix(in srgb, ${cool} 28%, #062f43)`,
+  };
+}
+
 export function applySkin(skinId) {
   const skin = getSkin(skinId);
+  const system = getSkinSystem(skin);
   const root = document.documentElement;
   root.dataset.skin = skin.id;
   root.dataset.pattern = skin.patternKey || "default";
@@ -148,5 +250,18 @@ export function applySkin(skinId) {
   root.style.setProperty("--skin-b", skin.colors[1]);
   root.style.setProperty("--skin-c", skin.colors[2]);
   root.style.setProperty("--skin-pattern", skin.pattern);
+  root.style.setProperty("--paper", system.paper);
+  root.style.setProperty("--paper-deep", system.paperDeep);
+  root.style.setProperty("--paper-soft", system.paperSoft);
+  root.style.setProperty("--paper-line", system.paperLine);
+  root.style.setProperty("--orange", system.live);
+  root.style.setProperty("--orange-hot", system.liveHot);
+  root.style.setProperty("--teal", system.teal);
+  root.style.setProperty("--cyan", system.cyan);
+  root.style.setProperty("--grass", system.grass);
+  root.style.setProperty("--stadium-night", system.stadium);
+  root.style.setProperty("--theme-a", system.warm);
+  root.style.setProperty("--theme-b", system.glow);
+  root.style.setProperty("--theme-c", system.cool);
   return skin;
 }

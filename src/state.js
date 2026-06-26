@@ -13,6 +13,7 @@ const defaults = {
   pendingPurchase: null,
   entitlementCache: normalizeEntitlements({ skins: ["default"] }),
   licenseId: null,
+  languageId: null,
 };
 
 const memoryStore = { ...defaults };
@@ -134,6 +135,10 @@ export async function setActiveSkin(activeSkinId) {
 
 export async function setToolbarMatch(toolbarMatchId) {
   return saveState({ toolbarMatchId });
+}
+
+export async function setLanguage(languageId) {
+  return saveState({ languageId });
 }
 
 export async function unlockSkin(skinId) {

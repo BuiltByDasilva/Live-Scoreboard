@@ -14,38 +14,40 @@
           <img class="brand-mark" src="assets/icon128.png" alt="">
           <div class="brand-copy">
             <h1>Live Scoreboard</h1>
-            <p class="product-label">2026 match center</p>
-            <p class="data-status" id="dataStatus">Loading live data...</p>
+            <p class="product-label" data-i18n="productLabel">World Cup style live scores</p>
           </div>
         </div>
-        <button class="icon-button" id="refreshButton" type="button" title="Refresh scores" aria-label="Refresh scores">
-          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 6v5h-5M4 18v-5h5M18.5 9a7 7 0 0 0-11.7-2.6L4 9m16 6-2.8 2.6A7 7 0 0 1 5.5 15"/></svg>
-        </button>
+        <div class="topbar-actions">
+          <p class="data-status" id="dataStatus" data-i18n="loadingLiveData">Loading live data...</p>
+          <button class="icon-button" id="refreshButton" type="button" title="Refresh scores" aria-label="Refresh scores" data-i18n-title="refreshScores" data-i18n-aria-label="refreshScores">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 6v5h-5M4 18v-5h5M18.5 9a7 7 0 0 0-11.7-2.6L4 9m16 6-2.8 2.6A7 7 0 0 1 5.5 15"/></svg>
+          </button>
+        </div>
       </header>
 
       <section class="hero-score" id="heroScore"></section>
 
-      <nav class="tabs" aria-label="Scoreboard sections">
+      <nav class="tabs" aria-label="Scoreboard sections" data-i18n-aria-label="scoreboardSections">
         <button class="tab is-active" type="button" data-tab="live" aria-selected="true">
-          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4.9 19.1a10 10 0 0 1 0-14.2M8.5 15.5a5 5 0 0 1 0-7M19.1 4.9a10 10 0 0 1 0 14.2M15.5 8.5a5 5 0 0 1 0 7"/><circle cx="12" cy="12" r="2"/></svg>
-          <span>Live</span>
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 12h4l2-6 4 13 2.5-7H21"/></svg>
+          <span data-i18n="tabLive">Live</span>
         </button>
         <button class="tab" type="button" data-tab="watchlist" aria-selected="false">
-          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>
-          <span>Watchlist</span>
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9L12 3Z"/></svg>
+          <span data-i18n="tabWatchlist">Watchlist</span>
         </button>
         <button class="tab" type="button" data-tab="skins" aria-selected="false">
-          <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20c1.1 0 2-.9 2-2 0-.5-.2-.9-.5-1.3-.3-.3-.5-.8-.5-1.3a2 2 0 0 1 2-2h2.4c2.5 0 4.6-2.1 4.6-4.6C22 5.9 17.5 2 12 2"/></svg>
-          <span>Skins</span>
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M8 4 5 6 2 7.5l2.2 4.4L7 10v10h10V10l2.8 1.9L22 7.5 19 6l-3-2a4 4 0 0 1-8 0Z"/></svg>
+          <span data-i18n="tabSkins">Skins</span>
         </button>
       </nav>
 
       <section class="panel is-active" id="livePanel" data-panel="live">
         <div class="section-heading">
-          <h2>Matches</h2>
+          <h2 data-i18n="matchesTitle">Matches</h2>
           <label class="toggle-row">
             <input id="favoritesOnly" type="checkbox">
-            <span>Watching only</span>
+            <span data-i18n="watchingOnly">Watching only</span>
           </label>
         </div>
         <div class="match-list" id="matchList"></div>
@@ -53,61 +55,71 @@
 
       <section class="panel" id="watchlistPanel" data-panel="watchlist">
         <div class="section-heading">
-          <h2>Game reminders</h2>
-          <span class="quiet-note">Notify 15 minutes before kickoff.</span>
+          <h2 data-i18n="remindersTitle">Game reminders</h2>
+          <span class="quiet-note" data-i18n="remindersNote">Notify 15 minutes before kickoff.</span>
         </div>
         <div class="watchlist-empty" id="watchlistEmpty">
-          <strong>No watched games yet.</strong>
-          Add a game from the Live tab and reminders will appear here.
+          <strong data-i18n="noWatchedTitle">No watched games yet.</strong>
+          <span data-i18n="noWatchedCopy">Add a game from the Live tab and reminders will appear here.</span>
         </div>
         <div class="match-list" id="watchlist"></div>
       </section>
 
       <section class="panel" id="skinsPanel" data-panel="skins">
-        <section class="theme-stage" id="themeStage" aria-label="Theme preview"></section>
+        <section class="theme-stage" id="themeStage" aria-label="Theme preview" data-i18n-aria-label="themePreview"></section>
 
         <div class="skin-toolbar">
           <div>
-            <h2>Your collection</h2>
-            <p class="store-note">Original country-inspired artwork. No official team or tournament branding.</p>
+            <h2 data-i18n="collectionTitle">Your collection</h2>
+            <p class="store-note" data-i18n="collectionNote">Original country-inspired artwork. No official team or tournament branding.</p>
           </div>
-          <select id="skinFilter" aria-label="Filter skins">
-            <option value="all">All skins</option>
-            <option value="owned">Owned</option>
-            <option value="locked">Locked</option>
+          <select id="skinFilter" aria-label="Filter skins" data-i18n-aria-label="filterSkins">
+            <option value="all" data-i18n="filterAll">All skins</option>
+            <option value="owned" data-i18n="filterOwned">Owned</option>
+            <option value="locked" data-i18n="filterLocked">Locked</option>
           </select>
         </div>
         <label class="skin-search">
-          <span class="visually-hidden">Search skins</span>
-          <input id="skinSearch" type="search" placeholder="Search country or theme" autocomplete="off">
+          <span class="visually-hidden" data-i18n="searchSkins">Search skins</span>
+          <input id="skinSearch" type="search" placeholder="Search country or theme" autocomplete="off" data-i18n-placeholder="searchPlaceholder">
         </label>
         <div class="skin-list" id="skinList"></div>
-        <section class="bundle-shop" aria-label="Skin bundles">
+        <section class="bundle-shop" aria-label="Skin bundles" data-i18n-aria-label="bundlesAria">
           <button type="button" data-bundle="five" data-sku="skin_five">
-            <span><strong>5-skin bundle</strong><small>Choose any five themes</small></span>
+            <span><strong data-i18n="bundleFiveTitle">5-skin bundle</strong><small data-i18n="bundleFiveNote">Choose any five themes</small></span>
             <b>$2.99</b>
           </button>
           <button type="button" data-bundle="all" data-sku="skins_all_2026">
-            <span><strong>All-access collection</strong><small>Unlock every current theme</small></span>
+            <span><strong data-i18n="bundleAllTitle">All-access collection</strong><small data-i18n="bundleAllNote">Unlock every current theme</small></span>
             <b>$9.99</b>
           </button>
         </section>
-        <section class="purchase-strip" aria-label="Purchase status">
+        <section class="purchase-strip" aria-label="Purchase status" data-i18n-aria-label="purchaseStatusAria">
           <div>
-            <p id="purchaseStatus">Secure checkout opens in Stripe. Unlocks appear automatically after payment.</p>
+            <p id="purchaseStatus" data-i18n="purchaseDefault">Secure checkout opens in Stripe. Unlocks appear automatically after payment.</p>
             <p class="support-code" id="licenseSupport"></p>
           </div>
           <div class="purchase-actions">
-            <button type="button" id="restoreButton">Restore purchases</button>
-            <button type="button" id="copyLicenseButton">Copy support code</button>
+            <button type="button" id="restoreButton" data-i18n="restorePurchases">Restore purchases</button>
+            <button type="button" id="copyLicenseButton" data-i18n="copySupportCode">Copy support code</button>
           </div>
         </section>
       </section>
 
       <footer class="footer-note">
-        <p><span>Toolbar tip:</span> Pin Live Scoreboard from Chrome's Extensions menu to keep the score visible while you work.</p>
-        <p><span>Privacy:</span> settings stay in Chrome storage and this extension never reads page content.</p>
+        <p><span data-i18n="toolbarTipLabel">Toolbar tip:</span> <span data-i18n="toolbarTipCopy">Pin Live Scoreboard from Chrome's Extensions menu to keep the score visible while you work.</span></p>
+        <p><span data-i18n="privacyLabel">Privacy:</span> <span data-i18n="privacyCopy">settings stay in Chrome storage and this extension never reads page content.</span></p>
       </footer>
+
+      <section class="language-dock" aria-label="Language" data-i18n-aria-label="languageLabel">
+        <button class="language-toggle" id="languageToggle" type="button" aria-expanded="false" aria-controls="languageMenu">
+          <svg class="language-globe" aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a13 13 0 0 1 0 18M12 3a13 13 0 0 0 0 18"/></svg>
+          <span class="language-toggle-main" data-i18n="changeLanguage">Change Language</span>
+          <span class="language-current" id="languageCurrent">English</span>
+          <svg class="language-chevron" aria-hidden="true" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+        <div class="language-menu" id="languageMenu" role="listbox" aria-label="Language" data-i18n-aria-label="languageLabel" hidden></div>
+      </section>
     </main>
 
     <script type="module" src="src/app.js"></script>

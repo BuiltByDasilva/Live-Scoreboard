@@ -1,12 +1,13 @@
 {
   "name": "live-scoreboard-extension",
-  "version": "0.3.1",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "scripts": {
     "validate": "node scripts/validate.mjs",
     "test": "node scripts/test-live-data.mjs",
     "check:live": "node scripts/check-live-feed.mjs",
+    "media": "node scripts/generate-release-media.mjs",
     "package": "rm -f live-scoreboard-extension.zip && zip -r -X live-scoreboard-extension.zip manifest.json sidepanel.html styles.css service-worker.js src assets/data assets/flags assets/icon16.png assets/icon32.png assets/icon48.png assets/icon128.png"
   }
 }
