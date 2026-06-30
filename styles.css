@@ -493,6 +493,32 @@ img[src$="soccer-ball.svg"] {
   pointer-events: none;
 }
 
+.hero-country-scene::before,
+.hero-country-scene::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  pointer-events: none;
+}
+
+.hero-country-scene::before {
+  background:
+    linear-gradient(118deg, transparent 0 26%, color-mix(in srgb, var(--skin-b) 30%, transparent) 27% 29%, transparent 30%),
+    linear-gradient(64deg, transparent 0 63%, color-mix(in srgb, var(--skin-c) 24%, transparent) 64% 66%, transparent 67%),
+    radial-gradient(circle at 15% 20%, color-mix(in srgb, var(--skin-b) 24%, transparent), transparent 24%),
+    radial-gradient(circle at 84% 18%, color-mix(in srgb, var(--skin-c) 28%, transparent), transparent 25%);
+  opacity: 0.82;
+  mix-blend-mode: screen;
+}
+
+.hero-country-scene::after {
+  top: auto;
+  height: 42%;
+  background:
+    linear-gradient(180deg, transparent, rgba(4, 14, 24, 0.52)),
+    radial-gradient(ellipse at 50% 100%, color-mix(in srgb, var(--skin-a) 32%, rgba(0, 234, 255, 0.18)), transparent 62%);
+}
+
 .hero-pattern-wash {
   position: absolute;
   inset: -18px;
@@ -952,7 +978,7 @@ img[src$="soccer-ball.svg"] {
 
 .tabs {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: 0.85fr 0.98fr 1.22fr 0.95fr;
   gap: 4px;
   margin-bottom: 8px;
 }
@@ -964,7 +990,7 @@ img[src$="soccer-ball.svg"] {
   min-height: 44px;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 3px;
   overflow: hidden;
   border: 2px solid var(--paper-line);
   border-radius: 8px 8px 0 0;
@@ -973,8 +999,8 @@ img[src$="soccer-ball.svg"] {
     var(--paper-soft);
   color: var(--ink);
   cursor: pointer;
-  padding: 4px 3px;
-  font-size: 10px;
+  padding: 4px 2px;
+  font-size: 9.5px;
   font-weight: 950;
   line-height: 1;
   text-transform: uppercase;
@@ -994,9 +1020,9 @@ img[src$="soccer-ball.svg"] {
 }
 
 .tab svg {
-  width: 17px;
-  height: 17px;
-  flex: 0 0 17px;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
   fill: none;
   stroke: currentColor;
   stroke-linecap: round;
@@ -1006,9 +1032,9 @@ img[src$="soccer-ball.svg"] {
 
 .tab span {
   min-width: 0;
-  max-width: calc(100% - 22px);
-  overflow: hidden;
-  text-overflow: ellipsis;
+  max-width: none;
+  overflow: visible;
+  text-overflow: clip;
   white-space: nowrap;
 }
 
@@ -1287,26 +1313,6 @@ img[src$="soccer-ball.svg"] {
   grid-row: 6;
   margin-top: 2px;
   grid-template-columns: 1fr;
-}
-
-.pinned-skin-pill {
-  display: inline-flex;
-  max-width: 100%;
-  align-items: center;
-  gap: 6px;
-  margin-top: 4px;
-  padding: 4px 8px;
-  border: 1px solid rgba(5, 38, 59, 0.18);
-  border-radius: 999px;
-  background: rgba(5, 38, 59, 0.22);
-  color: var(--ink);
-  font-size: 9px;
-  font-weight: 950;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  overflow: hidden;
 }
 
 .pinned-symbols {
@@ -3255,7 +3261,7 @@ h3 {
 }
 
 .tabs {
-  gap: 6px;
+  gap: 4px;
 }
 
 .tab {
@@ -3464,10 +3470,10 @@ h3 {
 .pinned-match-card {
   grid-template-columns: 1fr;
   grid-template-rows: auto;
-  gap: 12px;
+  gap: 8px;
   min-height: unset;
-  padding: 16px;
-  border-radius: 18px;
+  padding: 10px;
+  border-radius: 14px;
   background:
     radial-gradient(circle at 14% 16%, color-mix(in srgb, var(--miami-pink) 22%, transparent), transparent 22%),
     radial-gradient(circle at 86% 22%, color-mix(in srgb, var(--cyan) 26%, transparent), transparent 26%),
@@ -3507,23 +3513,29 @@ h3 {
 
 .pinned-status-chip,
 .pinned-stage-pill,
-.pinned-skin-pill,
+.pinned-inline-action,
 .pinned-meta span,
 .pinned-flair span,
 .pinned-symbols span {
   display: inline-flex;
   align-items: center;
-  min-height: 28px;
-  padding: 0 12px;
+  min-height: 24px;
+  padding: 0 10px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 999px;
   background: rgba(7, 21, 35, 0.72);
   color: var(--text-main);
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 900;
   line-height: 1;
   text-transform: uppercase;
   white-space: nowrap;
+}
+
+.pinned-inline-action {
+  min-width: 68px;
+  cursor: pointer;
+  justify-content: center;
 }
 
 .pinned-status-chip {
@@ -3542,31 +3554,32 @@ h3 {
 .pinned-kickoff strong {
   display: block;
   color: var(--text-main);
-  font-size: 24px;
+  font-size: 21px;
   font-weight: 950;
   line-height: 1;
 }
 
 .pinned-kickoff span {
   display: block;
-  margin-top: 5px;
+  margin-top: 3px;
   color: var(--text-muted);
-  font-size: 11px;
+  font-size: 9px;
   font-weight: 900;
   text-transform: uppercase;
 }
 
 .pinned-battle {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(86px, auto) minmax(0, 1fr);
   align-items: center;
-  gap: 10px;
+  gap: 7px;
 }
 
 .pinned-team-row {
-  grid-template-columns: 52px minmax(0, 1fr);
-  gap: 10px;
-  padding: 10px 12px;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 7px;
+  min-height: 70px;
+  padding: 8px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.04);
@@ -3577,22 +3590,22 @@ h3 {
 }
 
 .pinned-team-row .team-code {
-  width: 52px;
-  height: 52px;
+  width: 42px;
+  height: 42px;
 }
 
 .pinned-team-row span {
   color: var(--text-main);
-  font-size: 16px;
+  font-size: 13px;
   line-height: 1.04;
   white-space: normal;
 }
 
 .pinned-team-code {
   display: block;
-  margin-top: 4px;
+  margin-top: 3px;
   color: var(--text-muted);
-  font-size: 10px;
+  font-size: 8px;
   text-align: inherit;
 }
 
@@ -3600,9 +3613,9 @@ h3 {
   grid-column: auto;
   grid-row: auto;
   justify-self: stretch;
-  min-width: 116px;
-  min-height: 108px;
-  padding: 12px 14px;
+  min-width: 86px;
+  min-height: 70px;
+  padding: 8px 10px;
   border: 1px solid rgba(0, 215, 255, 0.18);
   border-left: 1px solid rgba(0, 215, 255, 0.18);
   border-radius: 20px;
@@ -3610,7 +3623,7 @@ h3 {
     radial-gradient(circle at 50% 16%, rgba(255, 209, 102, 0.12), transparent 26%),
     linear-gradient(180deg, rgba(10, 31, 50, 0.86), rgba(6, 19, 31, 0.92));
   color: var(--miami-gold);
-  font-size: 48px;
+  font-size: 36px;
   line-height: 1;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 0 22px rgba(0, 215, 255, 0.08);
 }
@@ -3624,43 +3637,43 @@ h3 {
   grid-template-columns: 1fr;
   align-content: center;
   justify-items: center;
-  gap: 8px;
+  gap: 5px;
   color: var(--text-main);
-  font-size: 18px;
+  font-size: 14px;
 }
 
 .pinned-scoreboard.is-upcoming strong {
   color: var(--miami-gold);
-  font-size: 26px;
+  font-size: 20px;
   font-weight: 950;
   line-height: 1;
 }
 
 .pinned-scoreboard.is-upcoming span {
   color: var(--text-muted);
-  font-size: 11px;
+  font-size: 9px;
   font-weight: 900;
   text-transform: uppercase;
 }
 
 .pinned-summary {
   display: grid;
-  gap: 6px;
+  gap: 3px;
 }
 
 .pinned-summary p {
   margin: 0;
   color: var(--text-muted);
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 800;
-  line-height: 1.4;
+  line-height: 1.28;
   white-space: normal;
   overflow: visible;
 }
 
 .pinned-identity {
   color: var(--text-main) !important;
-  font-size: 20px !important;
+  font-size: 15px !important;
   font-weight: 950 !important;
   line-height: 1.02 !important;
 }
@@ -3669,13 +3682,13 @@ h3 {
 .pinned-flair {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
 }
 
 .pinned-meta span,
+.pinned-inline-action,
 .pinned-flair span,
-.pinned-symbols span,
-.pinned-skin-pill {
+.pinned-symbols span {
   background: rgba(255, 255, 255, 0.06);
   color: var(--text-soft);
 }
@@ -3692,9 +3705,9 @@ h3 {
 }
 
 .match-actions-pinned .match-action {
-  min-width: 120px;
-  min-height: 34px;
-  font-size: 10px;
+  min-width: 104px;
+  min-height: 30px;
+  font-size: 9px;
 }
 
 .pinned-symbols {
@@ -4030,7 +4043,7 @@ html[data-skin="classic-scoreboard"] .pinned-match-card {
 
 html[data-skin="classic-scoreboard"] .pinned-status-chip,
 html[data-skin="classic-scoreboard"] .pinned-stage-pill,
-html[data-skin="classic-scoreboard"] .pinned-skin-pill,
+html[data-skin="classic-scoreboard"] .pinned-inline-action,
 html[data-skin="classic-scoreboard"] .pinned-meta span,
 html[data-skin="classic-scoreboard"] .pinned-flair span,
 html[data-skin="classic-scoreboard"] .pinned-symbols span {
@@ -4195,28 +4208,496 @@ html[data-skin="classic-scoreboard"] .language-toggle {
   }
 }
 
+/* Hero clarity refresh: keep the drama, make the match details win. */
+.hero-score,
+html[data-skin]:not([data-skin="default"]):not([data-skin="classic-scoreboard"]) .hero-score,
+html[data-skin="classic-scoreboard"] .hero-score {
+  min-height: 232px;
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 16% 16%, color-mix(in srgb, var(--miami-pink) 22%, transparent), transparent 25%),
+    radial-gradient(circle at 84% 18%, color-mix(in srgb, var(--cyan) 28%, transparent), transparent 27%),
+    linear-gradient(180deg, rgba(4, 18, 31, 0.22), rgba(5, 18, 30, 0.68)),
+    linear-gradient(180deg, color-mix(in srgb, var(--skin-c) 32%, #0b3d58) 0 48%, color-mix(in srgb, var(--skin-b) 20%, #163f48) 49% 61%, color-mix(in srgb, var(--skin-a) 24%, #173f27) 62% 100%);
+  box-shadow:
+    0 18px 36px rgba(0, 0, 0, 0.28),
+    0 0 0 1px rgba(255, 255, 255, 0.05),
+    inset 0 0 42px rgba(0, 215, 255, 0.1);
+}
+
+.hero-score::before {
+  opacity: 0.34;
+  background:
+    linear-gradient(90deg, transparent 0 49.6%, rgba(255, 255, 255, 0.62) 49.8% 50.2%, transparent 50.4%),
+    radial-gradient(ellipse at 50% 80%, transparent 0 46px, rgba(255, 255, 255, 0.46) 47px 49px, transparent 50px),
+    radial-gradient(ellipse at 50% 97%, transparent 0 100px, rgba(0, 234, 255, 0.36) 101px 103px, transparent 104px),
+    linear-gradient(90deg, transparent 7%, rgba(0, 234, 255, 0.4) 7.4% 7.8%, transparent 8.2%, transparent 91.8%, rgba(0, 234, 255, 0.4) 92.2% 92.6%, transparent 93%),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.045) 0 1px, transparent 1px 6px);
+}
+
+.hero-score::after {
+  opacity: 1;
+  animation: none;
+  background:
+    linear-gradient(90deg, rgba(3, 14, 24, 0.64), transparent 24%, transparent 76%, rgba(3, 14, 24, 0.64)),
+    linear-gradient(180deg, rgba(4, 16, 27, 0.22), transparent 42%, rgba(3, 12, 21, 0.46));
+}
+
+.hero-pattern-wash {
+  inset: -28px;
+  opacity: 0.3;
+  filter: saturate(1.62) contrast(1.18);
+  mix-blend-mode: screen;
+  transform: rotate(-7deg) scale(1.16);
+}
+
+.hero-flag-ghost {
+  right: -18px;
+  bottom: -34px;
+  width: 154px;
+  height: 154px;
+  opacity: 0.14;
+  filter: saturate(1.25) contrast(1.12) drop-shadow(0 18px 28px rgba(0, 0, 0, 0.3));
+}
+
+.hero-culture-mark {
+  top: 22px;
+  left: 22px;
+  opacity: 0.13;
+  font-size: 64px;
+  text-shadow:
+    0 0 22px color-mix(in srgb, var(--skin-b) 50%, transparent),
+    0 12px 34px rgba(0, 0, 0, 0.28);
+}
+
+.hero-scene-flare,
+.hero-scene-silhouette,
+.hero-scene-rhythm {
+  position: absolute;
+  pointer-events: none;
+}
+
+.hero-scene-flare {
+  inset: -20px;
+  background:
+    radial-gradient(circle at 18% 18%, color-mix(in srgb, var(--skin-b) 44%, transparent), transparent 23%),
+    radial-gradient(circle at 82% 15%, color-mix(in srgb, var(--skin-c) 52%, transparent), transparent 26%),
+    radial-gradient(ellipse at 50% 72%, color-mix(in srgb, var(--skin-a) 38%, transparent), transparent 40%);
+  opacity: 0.86;
+  mix-blend-mode: screen;
+}
+
+.hero-scene-rhythm {
+  inset: 0;
+  background:
+    linear-gradient(118deg, transparent 0 32%, color-mix(in srgb, var(--skin-b) 28%, transparent) 33% 35%, transparent 36%),
+    linear-gradient(64deg, transparent 0 55%, color-mix(in srgb, var(--skin-c) 24%, transparent) 56% 58%, transparent 59%),
+    repeating-linear-gradient(90deg, color-mix(in srgb, var(--skin-c) 12%, transparent) 0 1px, transparent 1px 34px);
+  opacity: 0.62;
+  mix-blend-mode: screen;
+}
+
+.hero-scene-silhouette {
+  right: 38px;
+  bottom: 34px;
+  width: 212px;
+  height: 126px;
+  opacity: 0.52;
+  filter:
+    drop-shadow(0 18px 22px rgba(0, 0, 0, 0.38))
+    drop-shadow(0 0 30px color-mix(in srgb, var(--skin-b) 30%, transparent));
+  background:
+    radial-gradient(ellipse at 50% 92%, color-mix(in srgb, var(--skin-b) 56%, rgba(255, 255, 255, 0.2)) 0 32%, transparent 33%),
+    linear-gradient(90deg, transparent 0 38%, color-mix(in srgb, var(--skin-c) 42%, rgba(255, 255, 255, 0.22)) 39% 61%, transparent 62%),
+    linear-gradient(180deg, transparent 0 52%, color-mix(in srgb, var(--skin-a) 40%, rgba(255, 255, 255, 0.22)) 53% 100%);
+}
+
+.hero-score[data-landmark="tower"] .hero-scene-silhouette,
+.hero-score[data-landmark="spires"] .hero-scene-silhouette,
+.hero-score[data-landmark="monument"] .hero-scene-silhouette,
+.hero-score[data-landmark="statue"] .hero-scene-silhouette {
+  width: 190px;
+  height: 150px;
+  background:
+    linear-gradient(84deg, transparent 0 44%, color-mix(in srgb, var(--skin-b) 70%, rgba(255, 255, 255, 0.26)) 45% 48%, transparent 49%),
+    linear-gradient(-84deg, transparent 0 44%, color-mix(in srgb, var(--skin-b) 70%, rgba(255, 255, 255, 0.26)) 45% 48%, transparent 49%),
+    linear-gradient(90deg, transparent 0 47%, color-mix(in srgb, var(--skin-c) 62%, rgba(255, 255, 255, 0.2)) 48% 54%, transparent 55%),
+    radial-gradient(circle at 50% 18%, color-mix(in srgb, var(--skin-a) 48%, rgba(255, 255, 255, 0.24)) 0 9%, transparent 10%);
+}
+
+.hero-score[data-landmark="mountain"] .hero-scene-silhouette,
+.hero-score[data-landmark="waterfall"] .hero-scene-silhouette {
+  right: 18px;
+  bottom: 30px;
+  width: 260px;
+  background:
+    linear-gradient(135deg, transparent 0 35%, color-mix(in srgb, var(--skin-b) 62%, rgba(255, 255, 255, 0.18)) 36% 53%, transparent 54%),
+    linear-gradient(45deg, transparent 0 34%, color-mix(in srgb, var(--skin-c) 64%, rgba(255, 255, 255, 0.2)) 35% 57%, transparent 58%),
+    linear-gradient(112deg, transparent 0 52%, color-mix(in srgb, var(--skin-a) 52%, rgba(255, 255, 255, 0.18)) 53% 72%, transparent 73%);
+}
+
+.hero-score[data-landmark="waterfall"] .hero-scene-silhouette::after {
+  position: absolute;
+  top: 28px;
+  left: 54%;
+  width: 12px;
+  height: 82px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--cyan) 72%, rgba(255, 255, 255, 0.22));
+  box-shadow: 18px 10px 0 color-mix(in srgb, var(--skin-b) 40%, transparent);
+  content: "";
+}
+
+.hero-score[data-landmark="pyramid"] .hero-scene-silhouette {
+  width: 238px;
+  background:
+    linear-gradient(132deg, transparent 0 34%, color-mix(in srgb, var(--skin-b) 72%, rgba(255, 255, 255, 0.22)) 35% 61%, transparent 62%),
+    linear-gradient(50deg, transparent 0 42%, color-mix(in srgb, var(--skin-a) 58%, rgba(255, 255, 255, 0.16)) 43% 66%, transparent 67%);
+}
+
+.hero-score[data-landmark="bridge"] .hero-scene-silhouette,
+.hero-score[data-landmark="arch"] .hero-scene-silhouette,
+.hero-score[data-landmark="gate"] .hero-scene-silhouette {
+  width: 248px;
+  background:
+    radial-gradient(ellipse at 28% 100%, transparent 0 26%, color-mix(in srgb, var(--skin-b) 66%, rgba(255, 255, 255, 0.22)) 27% 34%, transparent 35%),
+    radial-gradient(ellipse at 72% 100%, transparent 0 26%, color-mix(in srgb, var(--skin-c) 62%, rgba(255, 255, 255, 0.2)) 27% 34%, transparent 35%),
+    linear-gradient(180deg, transparent 0 57%, color-mix(in srgb, var(--skin-a) 52%, rgba(255, 255, 255, 0.18)) 58% 70%, transparent 71%);
+}
+
+.hero-score[data-landmark="palace"] .hero-scene-silhouette,
+.hero-score[data-landmark="dome"] .hero-scene-silhouette,
+.hero-score[data-landmark="museum"] .hero-scene-silhouette,
+.hero-score[data-landmark="fortress"] .hero-scene-silhouette {
+  width: 242px;
+  background:
+    radial-gradient(ellipse at 50% 34%, color-mix(in srgb, var(--skin-b) 64%, rgba(255, 255, 255, 0.22)) 0 22%, transparent 23%),
+    linear-gradient(90deg, color-mix(in srgb, var(--skin-c) 50%, rgba(255, 255, 255, 0.18)) 0 12%, transparent 13% 24%, color-mix(in srgb, var(--skin-b) 60%, rgba(255, 255, 255, 0.18)) 25% 75%, transparent 76% 87%, color-mix(in srgb, var(--skin-c) 50%, rgba(255, 255, 255, 0.18)) 88%),
+    linear-gradient(180deg, transparent 0 54%, color-mix(in srgb, var(--skin-a) 50%, rgba(255, 255, 255, 0.17)) 55% 100%);
+}
+
+.hero-score[data-landmark="shells"] .hero-scene-silhouette {
+  width: 226px;
+  background:
+    radial-gradient(ellipse at 22% 75%, transparent 0 24%, color-mix(in srgb, var(--skin-b) 70%, rgba(255, 255, 255, 0.22)) 25% 34%, transparent 35%),
+    radial-gradient(ellipse at 48% 68%, transparent 0 25%, color-mix(in srgb, var(--skin-c) 66%, rgba(255, 255, 255, 0.2)) 26% 35%, transparent 36%),
+    radial-gradient(ellipse at 74% 75%, transparent 0 24%, color-mix(in srgb, var(--skin-a) 58%, rgba(255, 255, 255, 0.2)) 25% 34%, transparent 35%);
+}
+
+.hero-score[data-landmark="windmill"] .hero-scene-silhouette {
+  width: 194px;
+  background:
+    linear-gradient(90deg, transparent 0 47%, color-mix(in srgb, var(--skin-b) 66%, rgba(255, 255, 255, 0.22)) 48% 54%, transparent 55%),
+    linear-gradient(45deg, transparent 0 44%, color-mix(in srgb, var(--skin-a) 56%, rgba(255, 255, 255, 0.2)) 45% 51%, transparent 52%),
+    linear-gradient(-45deg, transparent 0 44%, color-mix(in srgb, var(--skin-c) 58%, rgba(255, 255, 255, 0.2)) 45% 51%, transparent 52%);
+}
+
+.hero-score[data-landmark="atom"] .hero-scene-silhouette {
+  width: 180px;
+  background:
+    radial-gradient(circle at 50% 48%, color-mix(in srgb, var(--skin-b) 70%, rgba(255, 255, 255, 0.22)) 0 9%, transparent 10%),
+    radial-gradient(circle at 30% 28%, color-mix(in srgb, var(--skin-c) 62%, rgba(255, 255, 255, 0.2)) 0 6%, transparent 7%),
+    radial-gradient(circle at 70% 28%, color-mix(in srgb, var(--skin-a) 58%, rgba(255, 255, 255, 0.2)) 0 6%, transparent 7%),
+    radial-gradient(circle at 25% 70%, color-mix(in srgb, var(--skin-b) 60%, rgba(255, 255, 255, 0.2)) 0 6%, transparent 7%),
+    radial-gradient(circle at 75% 70%, color-mix(in srgb, var(--skin-c) 58%, rgba(255, 255, 255, 0.2)) 0 6%, transparent 7%),
+    linear-gradient(28deg, transparent 0 48%, color-mix(in srgb, var(--skin-b) 48%, rgba(255, 255, 255, 0.18)) 49% 51%, transparent 52%),
+    linear-gradient(-28deg, transparent 0 48%, color-mix(in srgb, var(--skin-c) 48%, rgba(255, 255, 255, 0.18)) 49% 51%, transparent 52%);
+}
+
+.hero-score[data-landmark="skyline"] .hero-scene-silhouette {
+  width: 250px;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--skin-b) 62%, rgba(255, 255, 255, 0.2)) 0 13%, transparent 14% 18%, color-mix(in srgb, var(--skin-c) 58%, rgba(255, 255, 255, 0.18)) 19% 31%, transparent 32% 36%, color-mix(in srgb, var(--skin-a) 54%, rgba(255, 255, 255, 0.18)) 37% 52%, transparent 53% 58%, color-mix(in srgb, var(--skin-b) 58%, rgba(255, 255, 255, 0.18)) 59% 72%, transparent 73%);
+}
+
+.hero-score[data-landmark="stadium"] .hero-scene-silhouette {
+  right: 20px;
+  bottom: 22px;
+  width: 270px;
+  height: 132px;
+  background:
+    radial-gradient(ellipse at 50% 100%, transparent 0 42%, color-mix(in srgb, var(--skin-b) 58%, rgba(255, 255, 255, 0.2)) 43% 49%, transparent 50%),
+    radial-gradient(circle at 18% 38%, color-mix(in srgb, var(--skin-c) 62%, rgba(255, 255, 255, 0.22)) 0 5%, transparent 6%),
+    radial-gradient(circle at 82% 38%, color-mix(in srgb, var(--skin-b) 62%, rgba(255, 255, 255, 0.22)) 0 5%, transparent 6%),
+    linear-gradient(90deg, transparent 0 8%, color-mix(in srgb, var(--skin-a) 50%, rgba(255, 255, 255, 0.16)) 9% 91%, transparent 92%);
+}
+
+.pattern-papel .hero-scene-rhythm,
+.pattern-fiesta .hero-scene-rhythm,
+.pattern-comic .hero-scene-rhythm {
+  background:
+    var(--skin-pattern),
+    repeating-linear-gradient(118deg, color-mix(in srgb, var(--skin-b) 18%, transparent) 0 12px, transparent 13px 28px);
+  opacity: 0.34;
+}
+
+.pattern-aurora .hero-scene-rhythm,
+.pattern-night .hero-scene-rhythm,
+.pattern-fjord .hero-scene-rhythm {
+  background:
+    radial-gradient(ellipse at 50% 120%, transparent 0 28%, color-mix(in srgb, var(--skin-b) 22%, transparent) 29% 32%, transparent 33%),
+    radial-gradient(ellipse at 50% 118%, transparent 0 44%, color-mix(in srgb, var(--skin-c) 18%, transparent) 45% 48%, transparent 49%);
+}
+
+.pattern-zellige .hero-scene-rhythm,
+.pattern-mosaic .hero-scene-rhythm,
+.pattern-silk .hero-scene-rhythm {
+  background:
+    var(--skin-pattern),
+    linear-gradient(120deg, transparent 0 38%, color-mix(in srgb, var(--skin-b) 20%, transparent) 39% 40%, transparent 41%);
+  opacity: 0.28;
+}
+
+.pattern-canopy .hero-scene-rhythm,
+.pattern-rainforest .hero-scene-rhythm,
+.pattern-bloom .hero-scene-rhythm,
+.pattern-reef .hero-scene-rhythm {
+  background:
+    radial-gradient(ellipse at 12% 18%, color-mix(in srgb, var(--skin-b) 24%, transparent) 0 18%, transparent 19%),
+    radial-gradient(ellipse at 82% 72%, color-mix(in srgb, var(--skin-c) 26%, transparent) 0 24%, transparent 25%),
+    linear-gradient(128deg, transparent 0 42%, color-mix(in srgb, var(--skin-a) 22%, transparent) 43% 45%, transparent 46%);
+}
+
+.pattern-ribbon .hero-scene-rhythm,
+.pattern-current .hero-scene-rhythm,
+.pattern-voyage .hero-scene-rhythm,
+.pattern-canal .hero-scene-rhythm,
+.pattern-music .hero-scene-rhythm {
+  background:
+    repeating-radial-gradient(ellipse at 12% 70%, transparent 0 22px, color-mix(in srgb, var(--skin-c) 22%, transparent) 23px 27px, transparent 28px 46px),
+    linear-gradient(116deg, transparent 0 44%, color-mix(in srgb, var(--skin-b) 22%, transparent) 45% 47%, transparent 48%);
+}
+
+.pattern-dunes .hero-scene-rhythm,
+.pattern-casbah .hero-scene-rhythm,
+.pattern-sandstone .hero-scene-rhythm,
+.pattern-papyrus .hero-scene-rhythm,
+.pattern-reeds .hero-scene-rhythm {
+  background:
+    radial-gradient(ellipse at 24% 100%, color-mix(in srgb, var(--skin-b) 24%, transparent) 0 30%, transparent 31%),
+    radial-gradient(ellipse at 78% 100%, color-mix(in srgb, var(--skin-c) 20%, transparent) 0 36%, transparent 37%),
+    repeating-linear-gradient(82deg, color-mix(in srgb, var(--skin-a) 12%, transparent) 0 2px, transparent 2px 20px);
+}
+
+.floodlight,
+.light-trail,
+.trail-two {
+  display: none;
+}
+
+.orbit-ball {
+  top: 16px;
+  right: 18px;
+  width: 42px;
+  height: 42px;
+  opacity: 0.84;
+  filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.34));
+}
+
+.hero-landmark {
+  inset: auto 14px 14px;
+  z-index: 4;
+  display: block;
+  overflow: visible;
+  opacity: 1;
+}
+
+.hero-landmark::before,
+.landmark-sun,
+.landmark-figure {
+  display: none;
+}
+
+.landmark-name {
+  position: static;
+  display: inline-flex;
+  max-width: min(220px, 72%);
+  min-height: 24px;
+  align-items: center;
+  justify-content: center;
+  margin-inline: auto;
+  padding: 6px 12px 5px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  background: rgba(4, 20, 34, 0.76);
+  color: rgba(244, 252, 255, 0.82);
+  font-size: 10px;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.22);
+  text-shadow: none;
+}
+
+.hero-content {
+  min-height: 232px;
+  align-content: start;
+  gap: 10px;
+  padding: 14px 11px 42px;
+}
+
+.status-row {
+  gap: 6px;
+}
+
+.match-state,
+.hero-stage {
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.22);
+}
+
+.hero-stage {
+  display: inline-flex;
+  min-height: 25px;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 12px 4px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  background: rgba(4, 20, 34, 0.74);
+  color: rgba(246, 252, 255, 0.9);
+  font-size: 11px;
+  font-weight: 950;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.scoreline {
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 8px;
+  align-items: stretch;
+}
+
+.team-block {
+  min-height: 116px;
+  align-content: center;
+  gap: 8px;
+  padding: 8px 6px;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, rgba(5, 23, 38, 0.72), rgba(4, 17, 29, 0.42)),
+    rgba(5, 21, 34, 0.52);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 12px 28px rgba(0, 0, 0, 0.2);
+}
+
+.team-code {
+  width: 62px;
+  height: 62px;
+  border-width: 3px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.24);
+}
+
+.team-name {
+  overflow: visible;
+  color: #f9fbff;
+  font-size: 15px;
+  line-height: 1.05;
+  text-overflow: clip;
+  text-shadow: 0 3px 12px rgba(0, 0, 0, 0.48);
+  white-space: normal;
+  word-break: normal;
+}
+
+.score-stack {
+  align-content: center;
+  gap: 7px;
+  min-width: 76px;
+}
+
+.score {
+  min-width: 74px;
+  color: #f9fbff;
+  font-size: 56px;
+  text-shadow:
+    0 6px 18px rgba(0, 0, 0, 0.48),
+    0 0 24px rgba(0, 215, 255, 0.18);
+}
+
+.hero-minute {
+  min-height: 28px;
+  min-width: 76px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 9px;
+  background: linear-gradient(180deg, rgba(5, 25, 42, 0.96), rgba(7, 31, 52, 0.94));
+  color: #f9fbff;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.24);
+}
+
 @media (max-width: 460px) {
+  .hero-score {
+    min-height: 226px;
+  }
+
+  .hero-content {
+    min-height: 226px;
+    gap: 8px;
+    padding: 12px 9px 40px;
+  }
+
+  .scoreline {
+    gap: 6px;
+  }
+
+  .team-block {
+    min-height: 108px;
+    padding: 7px 4px;
+    border-radius: 12px;
+  }
+
+  .team-code {
+    width: 56px;
+    height: 56px;
+  }
+
+  .team-name {
+    font-size: 13px;
+  }
+
+  .score-stack {
+    min-width: 66px;
+  }
+
+  .score {
+    min-width: 66px;
+    font-size: 48px;
+  }
+
+  .hero-minute {
+    min-width: 66px;
+    font-size: 14px;
+  }
+
+  .landmark-name {
+    max-width: min(190px, 78%);
+    font-size: 9px;
+  }
+
   .pinned-battle {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(74px, auto) minmax(0, 1fr);
+    gap: 5px;
   }
 
   .pinned-scoreboard {
     min-width: 0;
     width: 100%;
-    min-height: 92px;
+    min-height: 64px;
+    padding: 7px;
   }
 
   .pinned-team-row {
-    grid-template-columns: 58px minmax(0, 1fr);
+    grid-template-columns: 36px minmax(0, 1fr);
+    gap: 6px;
+    min-height: 62px;
+    padding: 7px;
   }
 
   .pinned-team-row .team-code {
-    width: 58px;
-    height: 58px;
+    width: 36px;
+    height: 36px;
   }
 
   .pinned-team-row span {
-    font-size: 18px;
+    font-size: 11px;
   }
 
   .pinned-team-row.is-away {
@@ -4246,26 +4727,26 @@ html[data-skin="classic-scoreboard"] .language-toggle {
   }
 
   .hero-score {
-    min-height: 228px;
+    min-height: 224px;
   }
 
   .hero-content {
-    min-height: 222px;
-    padding-inline: 10px;
+    min-height: 224px;
+    padding-inline: 8px;
   }
 
   .scoreline {
-    gap: 8px;
+    gap: 5px;
   }
 
   .team-code {
-    width: 66px;
-    height: 66px;
+    width: 52px;
+    height: 52px;
   }
 
   .score {
-    min-width: 78px;
-    font-size: 68px;
+    min-width: 60px;
+    font-size: 44px;
   }
 
   .match-card {
@@ -4298,7 +4779,7 @@ html[data-skin="classic-scoreboard"] .language-toggle {
   }
 
   .pinned-scoreboard {
-    min-height: 92px;
+    min-height: 64px;
   }
 }
 
@@ -4353,13 +4834,15 @@ html[data-skin="classic-scoreboard"] .language-toggle {
 
   .tab {
     min-height: 39px;
-    gap: 5px;
-    font-size: 10px;
+    gap: 3px;
+    padding-inline: 2px;
+    font-size: 9.25px;
   }
 
   .tab svg {
-    width: 17px;
-    height: 17px;
+    width: 15px;
+    height: 15px;
+    flex-basis: 15px;
   }
 
   .theme-stage {

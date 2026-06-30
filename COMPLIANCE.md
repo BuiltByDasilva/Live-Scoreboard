@@ -7,7 +7,7 @@ Live Scoreboard was built around Chrome Web Store review principles and intellec
 - Single purpose: live tournament scoreboard, bracket tracking, reminders, and directly related visual personalization.
 - Manifest V3.
 - Minimal permissions: `sidePanel`, `storage`, `alarms`, and `notifications`.
-- Host permissions limited to `https://site.api.espn.com/*` for factual scoreboard data.
+- Host permissions limited to ESPN scoreboard and standings endpoints for factual match and bracket data.
 - No content scripts.
 - No page content reading.
 - No search override, new tab override, ad injection, or browsing-data access.
@@ -28,7 +28,7 @@ The app is completely free for this release. There is no checkout, subscription,
 
 ## Data posture
 
-The extension reads factual scoreboard JSON from ESPN's public endpoint and stores user preferences in Chrome storage. No browsing activity, page content, cookies, passwords, form entries, or personal communications are read or sent.
+The extension reads factual scoreboard and standings JSON from ESPN's public endpoints and stores user preferences in Chrome storage. No browsing activity, page content, cookies, passwords, form entries, or personal communications are read or sent.
 
 No payment or license data is collected. All themes are available immediately from app settings.
 

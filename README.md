@@ -1,6 +1,6 @@
 # Live Scoreboard
 
-Live Scoreboard is an original Chrome Manifest V3 extension for glanceable football scores. It keeps the selected live score visible on the Chrome toolbar, opens a detailed side panel, supports upcoming-match reminders, tracks the World Cup knockout bracket, and includes original country-inspired skins for all 48 teams.
+Live Scoreboard is an original Chrome Manifest V3 extension for glanceable soccer scores. It keeps the selected live score visible on the Chrome toolbar, opens a detailed side panel, supports upcoming-match reminders, tracks the World Cup knockout bracket, and includes original country-inspired skins for all 48 teams.
 
 This MVP intentionally avoids official logos, official event marks, team federation crests, jersey replicas, copied store text, copied screenshots, and any claim of official affiliation.
 

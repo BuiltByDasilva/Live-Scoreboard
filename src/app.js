@@ -7,13 +7,21 @@ import {
   t,
 } from "./i18n.js";
 import { buildBracket } from "./bracket.js";
+import { getMatchAlertEvents, WhistleAlertPlayer } from "./audio-alerts.js";
 import {
   getSafeBundledSnapshot,
   LIVE_CACHE_KEY,
   loadLiveSnapshot,
+  normalizeLiveSnapshot,
   refreshLiveSnapshot,
 } from "./live-data.js";
-import { findNextMatch, getOrderedMatches, getTeamIdsInMatchOrder } from "./match-order.js";
+import {
+  findNextMatch,
+  getCurrentLiveTabMatches,
+  getOrderedMatches,
+  isMatchVisibleInLiveTab,
+  getTeamIdsInMatchOrder,
+} from "./match-order.js";
 import { applySkin, getSkin, SKINS } from "./skins.js";
 import {
   loadState,
@@ -77,7 +85,9 @@ let matches = liveSnapshot.matches;
 let previewSkinId = null;
 let languageId = resolveLocaleId(appState.languageId);
 let isLanguageDockCollapsed = false;
+const whistleAlerts = new WhistleAlertPlayer();
 applySkin(appState.activeSkinId);
+whistleAlerts.bindUnlockListeners();
 
 function tr(key, vars) {
   return t(languageId, key, vars);
@@ -108,7 +118,8 @@ function getPinnedMatch() {
   if (!appState.toolbarMatchId) {
     return null;
   }
-  return matches.find((match) => match.id === appState.toolbarMatchId) || null;
+  const pinned = matches.find((match) => match.id === appState.toolbarMatchId) || null;
+  return isMatchVisibleInLiveTab(pinned) ? pinned : null;
 }
 
 function formatPinnedMeta(match, dateLabel) {
@@ -392,13 +403,14 @@ function getVisibleMatches() {
     ? matches.filter((match) => appState.watchedMatchIds.includes(match.id))
     : matches;
 
-  return getOrderedMatches(visible);
+  return getCurrentLiveTabMatches(visible);
 }
 
 function renderHero() {
-  const featured = matches.find((match) => match.id === appState.toolbarMatchId)
-    || findNextMatch(matches)
-    || matches[0];
+  const currentMatches = getCurrentLiveTabMatches(matches);
+  const featured = currentMatches.find((match) => match.id === appState.toolbarMatchId)
+    || findNextMatch(currentMatches)
+    || currentMatches[0];
 
   if (!featured) {
     delete elements.heroScore.dataset.status;
@@ -412,18 +424,20 @@ function renderHero() {
   const landmark = heroSkin.landmark || getSkin("default").landmark;
   const isCountrySkin = heroSkin.id !== "default" && heroSkin.id !== "classic-scoreboard";
   const patternKey = heroSkin.patternKey || "default";
-  const countryScene = isCountrySkin
-    ? `
-      <div class="hero-country-scene pattern-${escapeAttribute(patternKey)}" aria-hidden="true">
-        <span class="hero-pattern-wash"></span>
-        <img class="hero-flag-ghost" src="${escapeAttribute(heroSkin.flagUrl)}" alt="" loading="lazy">
-        <span class="hero-culture-mark">${escapeAttribute(heroSkin.code || "")}</span>
-      </div>
-    `
-    : "";
+  const countryScene = `
+    <div class="hero-country-scene pattern-${escapeAttribute(patternKey)} ${isCountrySkin ? "is-country-scene" : "is-style-scene"}" aria-hidden="true">
+      <span class="hero-pattern-wash"></span>
+      <span class="hero-scene-flare"></span>
+      <span class="hero-scene-silhouette"></span>
+      <span class="hero-scene-rhythm"></span>
+      <img class="hero-flag-ghost" src="${escapeAttribute(heroSkin.flagUrl)}" alt="" loading="lazy">
+      <span class="hero-culture-mark">${escapeAttribute(heroSkin.code || "")}</span>
+    </div>
+  `;
 
   elements.heroScore.dataset.status = featured.status;
   elements.heroScore.dataset.landmark = landmark.type;
+  elements.heroScore.dataset.pattern = patternKey;
   elements.heroScore.innerHTML = `
     ${countryScene}
     <div class="hero-effects" aria-hidden="true">
@@ -596,7 +610,7 @@ function renderEliminatedTeam(entry) {
 function renderBracket() {
   if (!elements.bracketBoard) return;
 
-  const bracket = buildBracket(matches);
+  const bracket = buildBracket(matches, liveSnapshot.eliminations || []);
   const nextMatch = bracket.stats.nextMatch;
   const eliminatedMarkup = bracket.eliminated.length
     ? bracket.eliminated.map(renderEliminatedTeam).join("")
@@ -690,7 +704,6 @@ function renderPinnedPanel() {
 
   const kickoff = formatKickoffTime(pinned.kickoff);
   const kickoffDate = formatKickoffDate(pinned.kickoff);
-  const featuredSkin = getDisplayedSkin();
   const scoreA = pinned.status === "upcoming" ? "-" : `${pinned.homeScore ?? "-"}`;
   const scoreB = pinned.status === "upcoming" ? "-" : `${pinned.awayScore ?? "-"}`;
   const scoreLabel = pinned.status === "live"
@@ -701,21 +714,9 @@ function renderPinnedPanel() {
   const matchLabel = `${formatKickoffDate(pinned.kickoff)} · ${scoreLabel}`;
   const kickoffMinute = formatKickoffTime(pinned.kickoff);
   const venueText = pinned.venue || tr("location");
-  const stageLine = `${tr("matchStage")}: ${pinned.stage || tr("unavailable")}`;
   const kickoffUtc = `${kickoff} ${tr("utcLabel")}`;
-  const teamCodes = `${pinned.homeTeam.code || tr("tbd")} · ${pinned.awayTeam.code || tr("tbd")}`;
-  const culturePulse = `${featuredSkin?.culturalNote || ""} ${featuredSkin?.symbols ? `| ${tr("cultureSignal")}: ${featuredSkin.symbols.myth || ""}` : ""}`.trim();
   const teamHighlight = `${pinned.homeTeam.name} vs ${pinned.awayTeam.name}`;
-  const kickoffCountdown = pinned.status === "upcoming"
-    ? Math.max(0, Math.round((new Date(pinned.kickoff).getTime() - Date.now()) / 60000))
-    : null;
-  const kickoffHint = kickoffCountdown === null
-    ? tr("upcomingLabel")
-    : kickoffCountdown > 0
-      ? `${kickoffCountdown}m ${tr("watch")}`
-      : tr("watch");
   const stageLabel = pinned.stage || tr("unavailable");
-  const cultureLabel = featuredSkin?.symbols?.myth || featuredSkin?.motif || tr("cultureSignal");
   const scoreboardMarkup = pinned.status === "upcoming"
     ? `
       <div class="pinned-scoreboard is-upcoming" aria-label="${escapeAttribute(matchLabel)}">
@@ -730,25 +731,24 @@ function renderPinnedPanel() {
         <span>${escapeAttribute(scoreB)}</span>
       </div>
     `;
-  const spotlightMeta = [
-    locationFlag ? `<span class="location-pill">${locationFlag} ${escapeAttribute(location.country)}</span>` : "",
-    `<span>${escapeAttribute(stageLabel)}</span>`,
-    kickoff ? `<span>${escapeAttribute(`${kickoff} UTC`)}</span>` : "",
-    `<span>${escapeAttribute(pinned.status === "upcoming" ? kickoffHint : scoreLabel)}</span>`,
-  ].filter(Boolean).join("");
+  const spotlightMeta = locationFlag
+    ? `<div class="pinned-meta"><span class="location-pill">${locationFlag} ${escapeAttribute(location.country)}</span></div>`
+    : "";
 
   elements.pinnedSpotlight.innerHTML = `
     <article class="match-card pinned-match-card is-${escapeAttribute(pinned.status)}" style="--match-location-bg:${location.background};">
       <div class="pinned-topline">
         <span class="pinned-status-chip is-${escapeAttribute(pinned.status)}">${escapeAttribute(scoreLabel)}</span>
         <span class="pinned-stage-pill">${escapeAttribute(stageLabel)}</span>
+        <button class="pinned-inline-action match-action is-on" type="button" data-pin="${escapeAttribute(pinned.id)}" aria-pressed="true" title="${escapeAttribute(tr("pinTitle"))}">
+          ${tr("unpin")}
+        </button>
       </div>
       <div class="pinned-headline">
         <div class="pinned-kickoff" aria-label="${escapeAttribute(formatKickoffLabelForPin(pinned))}">
           <strong>${escapeAttribute(formatKickoffDate(pinned.kickoff))}</strong>
           <span>${escapeAttribute(`${kickoffMinute} ${tr("utcLabel") || "UTC"}`)}</span>
         </div>
-        <span class="pinned-skin-pill">${escapeAttribute(featuredSkin.name)}</span>
       </div>
       <div class="pinned-battle">
         <div class="pinned-team-row">
@@ -763,24 +763,9 @@ function renderPinnedPanel() {
       </div>
       <div class="pinned-summary">
         <p class="pinned-identity">${escapeAttribute(teamHighlight)}</p>
-        <p>${escapeAttribute(teamCodes)} • ${escapeAttribute(venueText)}</p>
-        <p>${escapeAttribute(culturePulse || tr("noMatchData"))}</p>
+        <p>${escapeAttribute(venueText)} • ${escapeAttribute(kickoffUtc)}</p>
       </div>
-      <div class="pinned-meta">
-        ${spotlightMeta}
-      </div>
-      <div class="match-actions match-actions-pinned">
-        <button class="match-action is-on" type="button" data-pin="${escapeAttribute(pinned.id)}" aria-pressed="true" title="${escapeAttribute(tr("pinTitle"))}">
-          ${tr("unpin")}
-        </button>
-      </div>
-      <div class="pinned-flair">
-        <span>${escapeAttribute(`${tr("cultureSignal")}: ${cultureLabel}`)}</span>
-        <span>${escapeAttribute(`${tr("watch")}: ${kickoffHint}`)}</span>
-        <span>${escapeAttribute(stageLine)}</span>
-        <span>${escapeAttribute(kickoffUtc)}</span>
-      </div>
-      ${renderSkinSymbols(featuredSkin, "pinned-symbols")}
+      ${spotlightMeta}
     </article>
   `;
 }
@@ -828,8 +813,6 @@ function renderThemeStage() {
     </div>
     <div class="theme-stage-copy">
       <div>
-        <p class="theme-team">${skin.team}</p>
-        <h2>${skin.name}</h2>
         <p>${skin.culturalNote}</p>
         ${renderLandmarkBadge(skin)}
         ${renderSkinSymbols(skin)}
@@ -946,11 +929,18 @@ function showToast(message) {
   setTimeout(() => toast.remove(), 3200);
 }
 
+function playMatchAlerts(previousSnapshot, nextSnapshot) {
+  const events = getMatchAlertEvents(previousSnapshot, nextSnapshot);
+  whistleAlerts.playEvents(events);
+}
+
 async function refreshLiveData({ announce = false } = {}) {
   elements.refreshButton.classList.add("is-loading");
   try {
+    const previousSnapshot = liveSnapshot;
     liveSnapshot = await refreshLiveSnapshot();
     matches = liveSnapshot.matches;
+    playMatchAlerts(previousSnapshot, liveSnapshot);
     renderAll();
     await sendRuntimeMessage({ type: "SCOREBOARD_REFRESHED" });
     if (announce) {
@@ -1077,8 +1067,10 @@ setInterval(refreshLiveData, 30000);
 if (typeof chrome !== "undefined" && chrome.storage?.onChanged) {
   chrome.storage.onChanged.addListener((changes, areaName) => {
     if (areaName === "local" && changes[LIVE_CACHE_KEY]?.newValue) {
-      liveSnapshot = changes[LIVE_CACHE_KEY].newValue;
+      const previousSnapshot = liveSnapshot;
+      liveSnapshot = normalizeLiveSnapshot(changes[LIVE_CACHE_KEY].newValue);
       matches = liveSnapshot.matches;
+      playMatchAlerts(previousSnapshot, liveSnapshot);
       renderAll();
       return;
     }

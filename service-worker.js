@@ -10,6 +10,8 @@ import { getToolbarIconImageData, getToolbarPresentation } from "./src/toolbar.j
 const REFRESH_ALARM = "live-scoreboard-refresh";
 const REMINDER_ALARM = "live-scoreboard-reminders";
 const BADGE_RESET_ALARM = "live-scoreboard-badge-reset";
+const POST_MATCH_REFRESH_PREFIX = "live-scoreboard-post-match-refresh:";
+const POST_MATCH_REFRESH_MINUTES_AFTER_KICKOFF = [125, 155];
 
 chrome.runtime.onInstalled.addListener(async () => {
   await chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
@@ -55,6 +57,10 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
   if (alarm.name === BADGE_RESET_ALARM) {
     await updateBadgeFromCache();
   }
+
+  if (alarm.name.startsWith(POST_MATCH_REFRESH_PREFIX)) {
+    await refreshAndUpdateBadge();
+  }
 });
 
 async function ensureAlarms() {
@@ -77,6 +83,7 @@ async function ensureAlarms() {
 async function refreshAndUpdateBadge() {
   const previous = await loadLiveSnapshot();
   const snapshot = await refreshLiveSnapshot();
+  await schedulePostMatchRefreshes(snapshot);
 
   if (didScoreChange(previous, snapshot)) {
     await chrome.action.setBadgeText({ text: "GOAL" });
@@ -88,6 +95,33 @@ async function refreshAndUpdateBadge() {
   }
 
   await updateBadge(snapshot);
+}
+
+async function schedulePostMatchRefreshes(snapshot) {
+  if (!snapshot?.matches?.length) return;
+
+  const now = Date.now();
+  const scheduleHorizon = now + 4 * 24 * 60 * 60 * 1000;
+
+  for (const match of snapshot.matches) {
+    if (match.status === "final") continue;
+
+    const kickoffTime = new Date(match.kickoff).getTime();
+    if (!Number.isFinite(kickoffTime) || kickoffTime < now - 3 * 60 * 60 * 1000 || kickoffTime > scheduleHorizon) {
+      continue;
+    }
+
+    for (const minutesAfterKickoff of POST_MATCH_REFRESH_MINUTES_AFTER_KICKOFF) {
+      const scheduledTime = kickoffTime + minutesAfterKickoff * 60 * 1000;
+      if (scheduledTime <= now) continue;
+
+      const alarmName = `${POST_MATCH_REFRESH_PREFIX}${match.id}:${minutesAfterKickoff}`;
+      const existing = await chrome.alarms.get(alarmName);
+      if (!existing) {
+        await chrome.alarms.create(alarmName, { when: scheduledTime });
+      }
+    }
+  }
 }
 
 async function updateBadgeFromCache() {

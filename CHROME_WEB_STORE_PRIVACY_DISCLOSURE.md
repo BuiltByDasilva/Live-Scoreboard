@@ -8,7 +8,7 @@ Publish `PRIVACY_POLICY.md` on your public website or GitHub Pages and use that 
 
 ## Single Purpose
 
-Live Scoreboard provides live football scores, pinned match status, watchlist reminders, bracket tracking, language preferences, and visual scoreboard skins in Chrome's side panel and toolbar.
+Live Scoreboard provides live soccer scores, pinned match status, watchlist reminders, bracket tracking, language preferences, and visual scoreboard skins in Chrome's side panel and toolbar.
 
 ## Data Collected
 
@@ -34,7 +34,7 @@ No user data is sold, transferred, or shared for advertising, analytics, credit,
 
 ## Remote Requests
 
-The extension requests factual scoreboard data from `https://site.api.espn.com/*`. User preferences, browsing activity, page content, and personal data are not attached to these requests by the extension.
+The extension requests factual scoreboard and standings data from `https://site.api.espn.com/*` and `https://site.web.api.espn.com/*`. User preferences, browsing activity, page content, and personal data are not attached to these requests by the extension.
 
 ## Permissions Justification
 
@@ -43,6 +43,7 @@ The extension requests factual scoreboard data from `https://site.api.espn.com/*
 - `alarms`: runs score refresh and reminder checks.
 - `notifications`: shows optional match reminder notifications.
 - `https://site.api.espn.com/*`: fetches scoreboard data.
+- `https://site.web.api.espn.com/*`: fetches standings data for bracket and elimination updates.
 
 ## Content Scripts
 

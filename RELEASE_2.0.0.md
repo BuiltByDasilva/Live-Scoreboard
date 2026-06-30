@@ -15,10 +15,10 @@
 ## Validation Commands
 
 ```bash
-npm run validate
-npm test
-npm run media
-npm run package
+/Users/nicholasdasilva/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node scripts/validate.mjs
+/Users/nicholasdasilva/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node scripts/test-live-data.mjs
+/Users/nicholasdasilva/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node scripts/generate-release-media.mjs
+zip -r -X live-scoreboard-extension.zip manifest.json _locales sidepanel.html styles.css service-worker.js src assets/data assets/flags assets/soccer-ball.svg assets/store-soccer-ball-icon.svg assets/icon16.png assets/icon32.png assets/icon48.png assets/icon128.png
 ```
 
 ## Package
@@ -39,8 +39,8 @@ live-scoreboard-extension.zip
   - `promo-video/store-listing-assets/04-country-skins-2-0.png`
   - `promo-video/store-listing-assets/05-global-language-2-0.png`
 - Localized screenshots: `promo-video/store-listing-assets/localized/*-live-scoreboard-2-0.png`
-- Small promo tile: `promo-video/store-listing-assets/small-promo-tile-440x280.png`
-- Marquee promo tile: `promo-video/store-listing-assets/marquee-promo-1400x560.png`
+- Small promo tile: `promo-video/store-listing-assets/small-promo-tile-440x280.jpg`
+- Marquee promo tile: `promo-video/store-listing-assets/marquee-promo-1400x560.jpg`
 - Promo video: `promo-video/live-scoreboard-promo.mp4`
 
 ## Before Publishing

@@ -32,7 +32,8 @@
     "storage"
   ],
   "host_permissions": [
-    "https://site.api.espn.com/*"
+    "https://site.api.espn.com/*",
+    "https://site.web.api.espn.com/*"
   ],
   "side_panel": {
     "default_path": "sidepanel.html"

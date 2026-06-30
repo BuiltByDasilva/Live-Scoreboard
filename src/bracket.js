@@ -1,4 +1,4 @@
-const KNOCKOUT_MATCHES = [
+export const KNOCKOUT_MATCHES = [
   { round: "Round of 32", num: 73, date: "2026-06-28", time: "12:00 UTC-7", team1: "2A", team2: "2B", ground: "Los Angeles (Inglewood)" },
   { round: "Round of 32", num: 74, date: "2026-06-29", time: "16:30 UTC-4", team1: "1E", team2: "3A/B/C/D/F", ground: "Boston (Foxborough)" },
   { round: "Round of 32", num: 75, date: "2026-06-29", time: "19:00 UTC-6", team1: "1F", team2: "2C", ground: "Monterrey (Guadalupe)" },
@@ -110,7 +110,23 @@ function isFinalWithScores(match = {}) {
 }
 
 function getWinnerLoser(match = {}) {
-  if (!isFinalWithScores(match) || Number(match.homeScore) === Number(match.awayScore)) {
+  if (!isFinalWithScores(match)) {
+    return { winner: null, loser: null };
+  }
+
+  if (match.winnerId && match.loserId) {
+    const homeWon = match.homeTeam?.id === match.winnerId;
+    const awayWon = match.awayTeam?.id === match.winnerId;
+
+    if (homeWon || awayWon) {
+      return {
+        winner: homeWon ? match.homeTeam : match.awayTeam,
+        loser: homeWon ? match.awayTeam : match.homeTeam,
+      };
+    }
+  }
+
+  if (Number(match.homeScore) === Number(match.awayScore)) {
     return { winner: null, loser: null };
   }
 
@@ -300,12 +316,20 @@ function getTeamEliminationDate(existing, next) {
   return nextDate >= existingDate ? next : existing;
 }
 
-export function buildBracket(matches = []) {
+export function buildBracket(matches = [], externalEliminations = []) {
   const matchIndex = buildMatchIndex(matches);
   const groupData = buildGroupData(matches);
   const winners = new Map();
   const losers = new Map();
   const eliminatedByTeam = new Map(groupData.eliminated.map((entry) => [entry.team.id, entry]));
+
+  for (const elimination of externalEliminations) {
+    if (!isRealTeam(elimination.team)) continue;
+    eliminatedByTeam.set(
+      elimination.team.id,
+      getTeamEliminationDate(eliminatedByTeam.get(elimination.team.id), elimination),
+    );
+  }
 
   for (const template of KNOCKOUT_MATCHES) {
     const actual = matchIndex.get(template.num);

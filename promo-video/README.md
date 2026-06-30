@@ -13,8 +13,8 @@ Store listing assets:
 - Localized listing screenshots: `store-listing-assets/localized/*-live-scoreboard-2-0.png`
 - Actual localized app captures: `store-listing-assets/localized/source-*-app-2-0-440x760.png`
 - Store icon: `store-listing-assets/store-icon-128.png`
-- Small promo tile: `store-listing-assets/small-promo-tile-440x280.png`
-- Marquee promo tile: `store-listing-assets/marquee-promo-1400x560.png`
+- Small promo tile: `store-listing-assets/small-promo-tile-440x280.jpg`
+- Marquee promo tile: `store-listing-assets/marquee-promo-1400x560.jpg`
 
 The 2.0 promo uses live browser captures from the extension so the Chrome Web Store media matches the installable build. Regenerate after changing screenshots or source images:
 

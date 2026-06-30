@@ -2,7 +2,7 @@
 
 Effective date: June 30, 2026
 
-Live Scoreboard is a Chrome extension for viewing football scores, match reminders, pinned matches, bracket progress, language preferences, and visual themes. This policy explains what the extension stores, what it does not collect, and how its Chrome permissions are used.
+Live Scoreboard is a Chrome extension for viewing soccer scores, match reminders, pinned matches, bracket progress, language preferences, and visual themes. This policy explains what the extension stores, what it does not collect, and how its Chrome permissions are used.
 
 ## Data The Extension Stores
 
@@ -37,7 +37,7 @@ The extension does not include ads, tracking pixels, remote analytics, checkout 
 
 ## Live Score Network Requests
 
-Live Scoreboard requests factual football scoreboard data from `https://site.api.espn.com/*`. These requests are used to display live and upcoming match data inside the extension.
+Live Scoreboard requests factual soccer scoreboard and standings data from `https://site.api.espn.com/*` and `https://site.web.api.espn.com/*`. These requests are used to display live and upcoming match data, bracket progress, and elimination status inside the extension.
 
 The extension does not attach your watched list, pinned match, selected skin, language setting, browsing activity, or personal data to these scoreboard requests. As with ordinary web requests, the score provider may receive standard technical request information such as IP address and user-agent according to that provider's own systems.
 
@@ -50,12 +50,13 @@ Live Scoreboard uses these Chrome extension permissions:
 - `alarms`: refreshes score data and checks reminder timing in the background.
 - `notifications`: shows optional match reminder notifications.
 - Host permission for `https://site.api.espn.com/*`: fetches scoreboard data.
+- Host permission for `https://site.web.api.espn.com/*`: fetches standings data for bracket and elimination updates.
 
 Live Scoreboard does not use content scripts and does not request permission to read or change websites you visit.
 
 ## Data Sharing
 
-Live Scoreboard does not sell data, transfer user data to advertisers, or share user data with third parties. The only network activity initiated by the extension is the scoreboard data request described above.
+Live Scoreboard does not sell data, transfer user data to advertisers, or share user data with third parties. The only network activity initiated by the extension is the scoreboard and standings data request described above.
 
 ## Data Retention And Deletion
 

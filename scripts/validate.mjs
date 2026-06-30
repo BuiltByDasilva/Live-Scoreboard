@@ -21,6 +21,7 @@ const requiredFiles = [
   "styles.css",
   "service-worker.js",
   "src/app.js",
+  "src/audio-alerts.js",
   "src/bracket.js",
   "src/data.js",
   "src/i18n.js",
@@ -76,7 +77,8 @@ for (const permission of expectedPermissions) {
 }
 
 const expectedHosts = [
-  "https://site.api.espn.com/*"
+  "https://site.api.espn.com/*",
+  "https://site.web.api.espn.com/*"
 ];
 
 if (JSON.stringify(manifest.host_permissions) !== JSON.stringify(expectedHosts)) {
@@ -87,6 +89,8 @@ const dataModule = await import(path.join(root, "src/data.js"));
 const i18nModule = await import(path.join(root, "src/i18n.js"));
 const skinsModule = await import(path.join(root, "src/skins.js"));
 const liveDataModule = await import(path.join(root, "src/live-data.js"));
+const audioAlertsModule = await import(path.join(root, "src/audio-alerts.js"));
+const matchOrderModule = await import(path.join(root, "src/match-order.js"));
 
 if (dataModule.TEAMS.length !== 48) {
   throw new Error(`Expected 48 teams, found ${dataModule.TEAMS.length}.`);
@@ -171,6 +175,69 @@ for (const match of dataModule.MATCHES) {
 const safeSnapshot = liveDataModule.getSafeBundledSnapshot();
 if (safeSnapshot.matches.some((match) => match.status === "live")) {
   throw new Error("Offline fallback must never fabricate a live match.");
+}
+
+const previousAlertSnapshot = {
+  stale: false,
+  matches: [
+    { id: "alert-start", status: "upcoming", homeScore: null, awayScore: null },
+    { id: "alert-goal", status: "live", homeScore: 0, awayScore: 0 },
+    { id: "alert-end", status: "live", homeScore: 1, awayScore: 1 },
+  ],
+};
+const nextAlertSnapshot = {
+  stale: false,
+  matches: [
+    { id: "alert-start", status: "live", homeScore: 0, awayScore: 0 },
+    { id: "alert-goal", status: "live", homeScore: 1, awayScore: 0 },
+    { id: "alert-end", status: "final", homeScore: 1, awayScore: 1 },
+  ],
+};
+const alertTypes = audioAlertsModule.getMatchAlertEvents(previousAlertSnapshot, nextAlertSnapshot)
+  .map((event) => event.type)
+  .sort();
+
+if (JSON.stringify(alertTypes) !== JSON.stringify(["end", "goal", "start"])) {
+  throw new Error(`Whistle alert detection failed: ${alertTypes.join(", ")}`);
+}
+
+const liveTabNow = new Date("2026-06-30T20:00:00Z").getTime();
+const liveTabFixtures = [
+  { id: "live-now", status: "live", kickoff: "2026-06-28T20:00:00Z" },
+  { id: "next-up", status: "upcoming", kickoff: "2026-07-01T20:00:00Z" },
+  { id: "fresh-final", status: "final", kickoff: "2026-06-29T20:00:00Z", concludedAt: "2026-06-29T22:00:00Z" },
+  { id: "expired-final", status: "final", kickoff: "2026-06-28T16:00:00Z", concludedAt: "2026-06-28T18:00:00Z" },
+  { id: "stale-upcoming", status: "upcoming", kickoff: "2026-06-27T20:00:00Z" },
+];
+const liveTabIds = matchOrderModule.getCurrentLiveTabMatches(liveTabFixtures, liveTabNow)
+  .map((match) => match.id);
+
+for (const expectedId of ["live-now", "next-up", "fresh-final"]) {
+  if (!liveTabIds.includes(expectedId)) {
+    throw new Error(`Live tab freshness filter incorrectly removed ${expectedId}.`);
+  }
+}
+
+for (const hiddenId of ["expired-final", "stale-upcoming"]) {
+  if (liveTabIds.includes(hiddenId)) {
+    throw new Error(`Live tab freshness filter should hide ${hiddenId}.`);
+  }
+}
+
+const poisonedCachedSnapshot = liveDataModule.normalizeLiveSnapshot({
+  fetchedAt: "2026-06-30T20:00:00Z",
+  matches: [
+    {
+      id: "old-final-with-refresh-time",
+      status: "final",
+      kickoff: "2026-06-18T20:00:00Z",
+      concludedAt: "2026-06-30T20:00:00Z",
+    },
+  ],
+});
+
+if (matchOrderModule.getCurrentLiveTabMatches(poisonedCachedSnapshot.matches, liveTabNow).length !== 0) {
+  throw new Error("Live tab freshness filter must clean cached finals with refresh-time conclusion stamps.");
 }
 
 const bundledSchedule = JSON.parse(fs.readFileSync(

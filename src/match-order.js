@@ -1,8 +1,19 @@
 const CURRENT_MATCH_GRACE_MS = 3 * 60 * 60 * 1000;
+const FINISHED_MATCH_RETENTION_MS = 24 * 60 * 60 * 1000;
 
 function getKickoffTime(match) {
   const timestamp = new Date(match?.kickoff || 0).getTime();
   return Number.isFinite(timestamp) ? timestamp : Number.MAX_SAFE_INTEGER;
+}
+
+function getConclusionTime(match) {
+  const storedConclusion = new Date(match?.concludedAt || match?.completedAt || match?.finalAt || 0).getTime();
+  if (Number.isFinite(storedConclusion) && storedConclusion > 0) return storedConclusion;
+
+  const kickoffTime = getKickoffTime(match);
+  return kickoffTime === Number.MAX_SAFE_INTEGER
+    ? kickoffTime
+    : kickoffTime + CURRENT_MATCH_GRACE_MS;
 }
 
 function getTeamId(team, fallbackId) {
@@ -36,10 +47,31 @@ export function getOrderedMatches(matches = [], now = Date.now()) {
   return [...matches].sort((a, b) => compareMatchesByNextUp(a, b, now));
 }
 
+export function isMatchVisibleInLiveTab(match, now = Date.now()) {
+  if (!match) return false;
+  if (match.status === "live") return true;
+
+  const conclusionTime = getConclusionTime(match);
+  const expiresAt = conclusionTime + FINISHED_MATCH_RETENTION_MS;
+
+  if (match.status === "final") {
+    return expiresAt >= now;
+  }
+
+  if (match.status === "upcoming") {
+    return expiresAt >= now;
+  }
+
+  return getKickoffTime(match) >= now;
+}
+
+export function getCurrentLiveTabMatches(matches = [], now = Date.now()) {
+  return getOrderedMatches(matches.filter((match) => isMatchVisibleInLiveTab(match, now)), now);
+}
+
 export function findNextMatch(matches = [], now = Date.now()) {
-  const ordered = getOrderedMatches(matches, now);
+  const ordered = getCurrentLiveTabMatches(matches, now);
   return ordered.find((match) => getMatchBucket(match, now) < 2)
-    || ordered.find((match) => match.status === "upcoming")
     || ordered[0]
     || null;
 }
