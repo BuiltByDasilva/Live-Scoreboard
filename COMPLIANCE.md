@@ -4,20 +4,19 @@ Live Scoreboard was built around Chrome Web Store review principles and intellec
 
 ## Chrome Web Store posture
 
-- Single purpose: live tournament scoreboard, reminders, and directly related visual personalization.
+- Single purpose: live tournament scoreboard, bracket tracking, reminders, and directly related visual personalization.
 - Manifest V3.
 - Minimal permissions: `sidePanel`, `storage`, `alarms`, and `notifications`.
-- Host permissions limited to `https://site.api.espn.com/*` for factual scoreboard data and `https://kmtpuvtswatkilvkffqb.supabase.co/*` for optional skin checkout, license redemption, and entitlement verification.
+- Host permissions limited to `https://site.api.espn.com/*` for factual scoreboard data.
 - No content scripts.
 - No page content reading.
 - No search override, new tab override, ad injection, or browsing-data access.
 - Settings are stored locally in Chrome storage.
+- Privacy policy for the 2.0.0 listing is in `PRIVACY_POLICY.md`.
 
 ## Monetization posture
 
-Live Scoreboard offers optional paid skins. Purchases are initiated from the extension, fulfilled through a backend license service, and paid through Stripe-hosted Checkout. The extension does not collect or store card numbers, payment credentials, billing addresses, or bank information.
-
-The extension stores and transmits a random license identifier, selected SKU/skin ID, purchase status, and entitlement state so users can unlock and restore purchased skins. Stripe handles payment details on Stripe-hosted pages, and the backend verifies entitlements before unlocking paid skins.
+The app is completely free for this release. There is no checkout, subscription, or in-app purchase flow.
 
 ## Intellectual-property posture
 
@@ -31,4 +30,8 @@ The extension stores and transmits a random license identifier, selected SKU/ski
 
 The extension reads factual scoreboard JSON from ESPN's public endpoint and stores user preferences in Chrome storage. No browsing activity, page content, cookies, passwords, form entries, or personal communications are read or sent.
 
-For optional purchases, the extension sends a random license identifier and purchase/entitlement information to the backend licensing service. Payment details are handled by Stripe-hosted Checkout rather than by the extension.
+No payment or license data is collected. All themes are available immediately from app settings.
+
+## Open-source posture
+
+The 2.0.0 release includes an MIT license in `LICENSE`. Before publishing the GitHub repository, confirm that any future live-score provider terms, store graphics, and generated media are compatible with the open-source release.

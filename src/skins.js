@@ -1,4 +1,5 @@
 import { TEAMS } from "./data.js";
+import { getTeamFlagUrl } from "./flags.js";
 
 const THEME_STORIES = {
   mex: ["Sunlit Papel", "paper-cut celebration", "papel", "Joyful cut-paper geometry and marigold warmth."],
@@ -102,6 +103,57 @@ const THEME_SYMBOLS = {
   pan: { animal: "Harpy eagle", myth: "Cadejo", fruit: "Pineapple" },
 };
 
+const THEME_LANDMARKS = {
+  mex: ["Chichen Itza", "pyramid"],
+  rsa: ["Table Mountain", "mountain"],
+  kor: ["Gyeongbokgung", "palace"],
+  cze: ["Charles Bridge", "bridge"],
+  can: ["CN Tower", "tower"],
+  qat: ["Museum of Islamic Art", "museum"],
+  sui: ["Matterhorn", "mountain"],
+  bih: ["Stari Most", "bridge"],
+  bra: ["Christ the Redeemer", "statue"],
+  mar: ["Hassan II Mosque", "tower"],
+  hai: ["Citadelle Laferriere", "fortress"],
+  sco: ["Edinburgh Castle", "fortress"],
+  usa: ["Statue of Liberty", "statue"],
+  aus: ["Sydney Opera House", "shells"],
+  tur: ["Hagia Sophia", "dome"],
+  par: ["Palacio de Lopez", "palace"],
+  ger: ["Brandenburg Gate", "gate"],
+  cur: ["Handelskade", "skyline"],
+  civ: ["Basilica of Yamoussoukro", "dome"],
+  ecu: ["Mitad del Mundo", "monument"],
+  ned: ["Kinderdijk Windmills", "windmill"],
+  jpn: ["Mount Fuji", "mountain"],
+  swe: ["Stockholm City Hall", "tower"],
+  tun: ["Amphitheatre of El Jem", "arch"],
+  bel: ["Atomium", "atom"],
+  egy: ["Pyramids of Giza", "pyramid"],
+  irn: ["Azadi Tower", "arch"],
+  nzl: ["Sky Tower", "tower"],
+  esp: ["Sagrada Familia", "spires"],
+  cpv: ["Pico do Fogo", "mountain"],
+  ksa: ["Kingdom Centre", "tower"],
+  uru: ["Palacio Salvo", "tower"],
+  fra: ["Eiffel Tower", "tower"],
+  sen: ["African Renaissance Monument", "statue"],
+  irq: ["Ziggurat of Ur", "pyramid"],
+  nor: ["Bryggen", "skyline"],
+  arg: ["Obelisco", "monument"],
+  aut: ["Schonbrunn Palace", "palace"],
+  alg: ["Maqam Echahid", "monument"],
+  jor: ["Petra", "arch"],
+  por: ["Belem Tower", "tower"],
+  cod: ["Boyoma Falls", "waterfall"],
+  uzb: ["Registan", "dome"],
+  col: ["Las Lajas Sanctuary", "spires"],
+  eng: ["Big Ben", "tower"],
+  cro: ["Dubrovnik Walls", "fortress"],
+  gha: ["Black Star Gate", "gate"],
+  pan: ["Panama Canal", "bridge"],
+};
+
 const PATTERNS = {
   papel: (a, b, c) => `linear-gradient(135deg, transparent 0 42%, ${c} 43% 56%, transparent 57%), repeating-linear-gradient(45deg, ${a} 0 14px, ${b} 14px 28px)`,
   mosaic: (a, b, c) => `conic-gradient(from 45deg at 25% 25%, ${a} 0 25%, ${b} 0 50%, ${c} 0 75%, ${a} 0)`,
@@ -155,20 +207,39 @@ const PATTERNS = {
 
 export const DEFAULT_SKIN = {
   id: "default",
-  name: "Retro Stadium Neon",
-  team: "Live Scoreboard",
-  code: "26",
-  price: "Included",
-  colors: ["#c94616", "#f7e9bd", "#007d9b"],
-  description: "The signature parchment-and-neon Live Scoreboard theme.",
-  motif: "stadium lights and matchday print",
-  culturalNote: "An original Live Scoreboard poster-style design.",
-  symbols: { animal: "Match ball", myth: "Neon comet", fruit: "Victory citrus" },
-  pattern: "radial-gradient(circle at 50% 38%, rgba(0, 234, 255, 0.32), transparent 34%), linear-gradient(145deg, #f7e9bd, #0c5261 62%, #6ea117)",
+  name: "Futuristic Neon",
+  team: "Scoreboard Style",
+  code: "FX",
+  colors: ["#ff4fa3", "#ffd166", "#00d7ff"],
+  description: "The signature Miami-night Live Scoreboard theme.",
+  motif: "stadium lights, sea breeze, and neon boulevards",
+  culturalNote: "An original Live Scoreboard nightscape with tropical neon energy.",
+  symbols: { animal: "Match ball", myth: "Sunset flare", fruit: "Victory citrus" },
+  pattern: "radial-gradient(circle at 18% 18%, rgba(255, 79, 163, 0.46), transparent 26%), radial-gradient(circle at 82% 24%, rgba(0, 215, 255, 0.42), transparent 28%), linear-gradient(145deg, #061523, #12395a 52%, #ff7aa5 100%)",
+  flagUrl: "assets/icon128.png",
+  landmark: { name: "Neon Stadium", type: "stadium" },
+};
+
+export const CLASSIC_SKIN = {
+  id: "classic-scoreboard",
+  name: "Classic Matchday Print",
+  team: "Scoreboard Style",
+  code: "CL",
+  colors: ["#c95f1f", "#f7e9bd", "#007d9b"],
+  description: "A vintage World Cup poster-style scoreboard theme.",
+  motif: "aged matchday print, teal stadium glow, and paper texture",
+  culturalNote: "An original classic scoreboard treatment with warm paper, ink, and stadium-light energy.",
+  symbols: { animal: "Match ball", myth: "Stadium comet", fruit: "Victory citrus" },
+  pattern: "radial-gradient(circle at 18% 18%, rgba(255, 244, 188, 0.62), transparent 24%), radial-gradient(circle at 82% 24%, rgba(0, 215, 255, 0.32), transparent 28%), linear-gradient(145deg, #f7e9bd, #e4c987 58%, #0b7183 100%)",
+  patternKey: "classic",
+  flagUrl: "assets/icon128.png",
+  landmark: { name: "Classic Stadium", type: "stadium" },
+  variant: "classic",
 };
 
 export const SKINS = [
   DEFAULT_SKIN,
+  CLASSIC_SKIN,
   ...TEAMS.map((team) => {
     const [name, motif, patternKey, culturalNote] = THEME_STORIES[team.id];
     return {
@@ -176,14 +247,18 @@ export const SKINS = [
       name,
       team: team.name,
       code: team.code,
-      price: "$0.99",
       colors: team.colors,
       description: `${team.name}-inspired ${motif}.`,
       motif,
       culturalNote,
       symbols: THEME_SYMBOLS[team.id],
+      landmark: {
+        name: THEME_LANDMARKS[team.id][0],
+        type: THEME_LANDMARKS[team.id][1],
+      },
       pattern: PATTERNS[patternKey](...team.colors),
       patternKey,
+      flagUrl: getTeamFlagUrl(team.id),
     };
   }),
 ];
@@ -223,20 +298,58 @@ function getSkinSystem(skin) {
   const cool = [...colors].reverse().find((color) => color !== warm && luminance(color) < 0.86) || "#007d9b";
   const glow = colors.find((color) => color !== warm && color !== cool) || "#f7e9bd";
 
+  if (skin.variant === "classic") {
+    return {
+      warm,
+      cool,
+      glow,
+      paper: "#ead8a8",
+      paperDeep: "#caa76b",
+      paperSoft: "#fff1c9",
+      paperLine: "#b69659",
+      live: "#c95f1f",
+      liveHot: "#f36b16",
+      teal: "#007d9b",
+      cyan: "#00d7ff",
+      grass: "#79a81d",
+      stadium: "#0b4052",
+      surface: "#f4dfac",
+      surfaceElevated: "#fff1c9",
+      surfaceSoft: "#ecd39c",
+      line: "rgba(150, 119, 63, 0.52)",
+      lineStrong: "rgba(0, 125, 155, 0.72)",
+      text: "#0e2a3a",
+      textSoft: "#183d4f",
+      textMuted: "#725f3a",
+      pink: "#c95f1f",
+      gold: "#f0bd4f",
+    };
+  }
+
   return {
     warm,
     cool,
     glow,
-    paper: `color-mix(in srgb, ${glow} 18%, #f7e9bd)`,
-    paperDeep: `color-mix(in srgb, ${warm} 14%, #e6cf92)`,
-    paperSoft: `color-mix(in srgb, ${glow} 12%, #fff3cf)`,
-    paperLine: `color-mix(in srgb, ${warm} 30%, #c7aa6f)`,
+    paper: `color-mix(in srgb, ${cool} 74%, #09131f)`,
+    paperDeep: `color-mix(in srgb, ${warm} 22%, #10263a)`,
+    paperSoft: `color-mix(in srgb, ${cool} 52%, #13273b)`,
+    paperLine: `color-mix(in srgb, ${glow} 36%, rgba(115, 224, 255, 0.42))`,
     live: `color-mix(in srgb, ${warm} 76%, #c94616)`,
     liveHot: `color-mix(in srgb, ${warm} 56%, #f36b16)`,
     teal: `color-mix(in srgb, ${cool} 68%, #007d9b)`,
     cyan: `color-mix(in srgb, ${cool} 42%, #00eaff)`,
     grass: `color-mix(in srgb, ${glow} 24%, #6ea117)`,
     stadium: `color-mix(in srgb, ${cool} 28%, #062f43)`,
+    surface: `color-mix(in srgb, ${cool} 76%, #06111c)`,
+    surfaceElevated: `color-mix(in srgb, ${cool} 58%, #10253a)`,
+    surfaceSoft: `color-mix(in srgb, ${warm} 12%, #11253a)`,
+    line: `color-mix(in srgb, ${glow} 26%, rgba(117, 227, 255, 0.42))`,
+    lineStrong: `color-mix(in srgb, ${cool} 44%, rgba(0, 215, 255, 0.72))`,
+    text: "#f7fbff",
+    textSoft: "rgba(236, 247, 255, 0.8)",
+    textMuted: "rgba(162, 203, 226, 0.8)",
+    pink: `color-mix(in srgb, ${warm} 44%, #ff4fb8)`,
+    gold: `color-mix(in srgb, ${glow} 68%, #ffd166)`,
   };
 }
 
@@ -250,6 +363,8 @@ export function applySkin(skinId) {
   root.style.setProperty("--skin-b", skin.colors[1]);
   root.style.setProperty("--skin-c", skin.colors[2]);
   root.style.setProperty("--skin-pattern", skin.pattern);
+  root.style.setProperty("--skin-flag-url", `url("${skin.flagUrl}")`);
+  root.style.setProperty("--skin-variant", skin.variant || "neon");
   root.style.setProperty("--paper", system.paper);
   root.style.setProperty("--paper-deep", system.paperDeep);
   root.style.setProperty("--paper-soft", system.paperSoft);
@@ -263,5 +378,15 @@ export function applySkin(skinId) {
   root.style.setProperty("--theme-a", system.warm);
   root.style.setProperty("--theme-b", system.glow);
   root.style.setProperty("--theme-c", system.cool);
+  root.style.setProperty("--surface-0", system.surface);
+  root.style.setProperty("--surface-1", system.surfaceElevated);
+  root.style.setProperty("--surface-2", system.surfaceSoft);
+  root.style.setProperty("--line-soft", system.line);
+  root.style.setProperty("--line-strong", system.lineStrong);
+  root.style.setProperty("--text-main", system.text);
+  root.style.setProperty("--text-soft", system.textSoft);
+  root.style.setProperty("--text-muted", system.textMuted);
+  root.style.setProperty("--miami-pink", system.pink);
+  root.style.setProperty("--miami-gold", system.gold);
   return skin;
 }

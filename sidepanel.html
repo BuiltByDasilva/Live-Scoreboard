@@ -11,9 +11,9 @@
     <main class="app-shell" id="app" aria-live="polite">
       <header class="topbar">
         <div class="brand-lockup">
-          <img class="brand-mark" src="assets/icon128.png" alt="">
+          <img class="brand-mark brand-ball" src="assets/soccer-ball.svg" alt="" aria-hidden="true">
           <div class="brand-copy">
-            <h1>Live Scoreboard</h1>
+            <h1><span class="title-live">Live</span> Scoreboard</h1>
             <p class="product-label" data-i18n="productLabel">World Cup style live scores</p>
           </div>
         </div>
@@ -34,7 +34,11 @@
         </button>
         <button class="tab" type="button" data-tab="watchlist" aria-selected="false">
           <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9L12 3Z"/></svg>
-          <span data-i18n="tabWatchlist">Watchlist</span>
+          <span data-i18n="tabWatchlist">Watch</span>
+        </button>
+        <button class="tab" type="button" data-tab="bracket" aria-selected="false">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 4h5v5H6zM13 15h5v5h-5zM13 4h5v5h-5zM8.5 9v2.5H15V15"/></svg>
+          <span data-i18n="tabBracket">Bracket</span>
         </button>
         <button class="tab" type="button" data-tab="skins" aria-selected="false">
           <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M8 4 5 6 2 7.5l2.2 4.4L7 10v10h10V10l2.8 1.9L22 7.5 19 6l-3-2a4 4 0 0 1-8 0Z"/></svg>
@@ -50,6 +54,7 @@
             <span data-i18n="watchingOnly">Watching only</span>
           </label>
         </div>
+        <section class="pinned-spotlight" id="pinnedSpotlight" aria-live="polite"></section>
         <div class="match-list" id="matchList"></div>
       </section>
 
@@ -65,6 +70,16 @@
         <div class="match-list" id="watchlist"></div>
       </section>
 
+      <section class="panel" id="bracketPanel" data-panel="bracket">
+        <div class="section-heading bracket-heading">
+          <div>
+            <h2 data-i18n="bracketTitle">Tournament bracket</h2>
+            <p class="quiet-note" data-i18n="bracketNote">Follow every remaining knockout game and elimination.</p>
+          </div>
+        </div>
+        <section class="bracket-board" id="bracketBoard" aria-live="polite"></section>
+      </section>
+
       <section class="panel" id="skinsPanel" data-panel="skins">
         <section class="theme-stage" id="themeStage" aria-label="Theme preview" data-i18n-aria-label="themePreview"></section>
 
@@ -73,37 +88,12 @@
             <h2 data-i18n="collectionTitle">Your collection</h2>
             <p class="store-note" data-i18n="collectionNote">Original country-inspired artwork. No official team or tournament branding.</p>
           </div>
-          <select id="skinFilter" aria-label="Filter skins" data-i18n-aria-label="filterSkins">
-            <option value="all" data-i18n="filterAll">All skins</option>
-            <option value="owned" data-i18n="filterOwned">Owned</option>
-            <option value="locked" data-i18n="filterLocked">Locked</option>
-          </select>
         </div>
         <label class="skin-search">
           <span class="visually-hidden" data-i18n="searchSkins">Search skins</span>
           <input id="skinSearch" type="search" placeholder="Search country or theme" autocomplete="off" data-i18n-placeholder="searchPlaceholder">
         </label>
         <div class="skin-list" id="skinList"></div>
-        <section class="bundle-shop" aria-label="Skin bundles" data-i18n-aria-label="bundlesAria">
-          <button type="button" data-bundle="five" data-sku="skin_five">
-            <span><strong data-i18n="bundleFiveTitle">5-skin bundle</strong><small data-i18n="bundleFiveNote">Choose any five themes</small></span>
-            <b>$2.99</b>
-          </button>
-          <button type="button" data-bundle="all" data-sku="skins_all_2026">
-            <span><strong data-i18n="bundleAllTitle">All-access collection</strong><small data-i18n="bundleAllNote">Unlock every current theme</small></span>
-            <b>$9.99</b>
-          </button>
-        </section>
-        <section class="purchase-strip" aria-label="Purchase status" data-i18n-aria-label="purchaseStatusAria">
-          <div>
-            <p id="purchaseStatus" data-i18n="purchaseDefault">Secure checkout opens in Stripe. Unlocks appear automatically after payment.</p>
-            <p class="support-code" id="licenseSupport"></p>
-          </div>
-          <div class="purchase-actions">
-            <button type="button" id="restoreButton" data-i18n="restorePurchases">Restore purchases</button>
-            <button type="button" id="copyLicenseButton" data-i18n="copySupportCode">Copy support code</button>
-          </div>
-        </section>
       </section>
 
       <footer class="footer-note">
@@ -111,14 +101,21 @@
         <p><span data-i18n="privacyLabel">Privacy:</span> <span data-i18n="privacyCopy">settings stay in Chrome storage and this extension never reads page content.</span></p>
       </footer>
 
-      <section class="language-dock" aria-label="Language" data-i18n-aria-label="languageLabel">
-        <button class="language-toggle" id="languageToggle" type="button" aria-expanded="false" aria-controls="languageMenu">
-          <svg class="language-globe" aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a13 13 0 0 1 0 18M12 3a13 13 0 0 0 0 18"/></svg>
-          <span class="language-toggle-main" data-i18n="changeLanguage">Change Language</span>
-          <span class="language-current" id="languageCurrent">English</span>
-          <svg class="language-chevron" aria-hidden="true" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+      <img class="dock-soccer-ball" id="dockSoccerBall" src="assets/soccer-ball.svg" alt="" aria-hidden="true">
+
+      <section class="language-dock" id="languageDock" aria-label="Language" data-i18n-aria-label="languageLabel">
+        <button class="language-collapse" id="languageCollapse" type="button" aria-pressed="false" aria-label="Hide language panel" title="Hide language panel">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 14 6-6 6 6"/></svg>
         </button>
-        <div class="language-menu" id="languageMenu" role="listbox" aria-label="Language" data-i18n-aria-label="languageLabel" hidden></div>
+        <div class="language-panel-shell" id="languagePanelShell">
+          <button class="language-toggle" id="languageToggle" type="button" aria-expanded="false" aria-controls="languageMenu">
+            <svg class="language-globe" aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a13 13 0 0 1 0 18M12 3a13 13 0 0 0 0 18"/></svg>
+            <span class="language-toggle-main" data-i18n="changeLanguage">Change Language</span>
+            <span class="language-current" id="languageCurrent">English</span>
+            <svg class="language-chevron" aria-hidden="true" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+          <div class="language-menu" id="languageMenu" role="listbox" aria-label="Language" data-i18n-aria-label="languageLabel" hidden></div>
+        </div>
       </section>
     </main>
 

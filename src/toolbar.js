@@ -7,9 +7,11 @@ function getToolbarTeamLabel(team) {
   return team?.code || team?.name || "TBD";
 }
 
-export function chooseToolbarMatch(matches, state) {
-  const pinned = matches.find((match) => match.id === state.toolbarMatchId);
-  if (pinned) return pinned;
+function chooseLiveToolbarMatch(matches, state) {
+  const pinnedLive = matches.find((match) => (
+    match.id === state.toolbarMatchId && match.status === "live"
+  ));
+  if (pinnedLive) return pinnedLive;
 
   const watchedLive = matches.find((match) => (
     match.status === "live" && state.watchedMatchIds.includes(match.id)
@@ -17,10 +19,38 @@ export function chooseToolbarMatch(matches, state) {
   return watchedLive || matches.find((match) => match.status === "live") || null;
 }
 
+export function chooseToolbarMatch(matches, state) {
+  const pinned = matches.find((match) => match.id === state.toolbarMatchId);
+  if (pinned) return pinned;
+
+  return chooseLiveToolbarMatch(matches, state);
+}
+
+function formatLiveBadgeScore(match) {
+  const home = `${match.homeScore ?? 0}`;
+  const away = `${match.awayScore ?? 0}`;
+  const compact = `${home}-${away}`;
+  if (compact.length <= 4) return compact;
+  return `${home}:${away}`.slice(0, 4);
+}
+
 export function getToolbarPresentation(snapshot, state, now = Date.now()) {
   const matches = snapshot.matches || [];
+  const liveSelected = chooseLiveToolbarMatch(matches, state);
   const selected = chooseToolbarMatch(matches, state);
   const liveCount = matches.filter((match) => match.status === "live").length;
+
+  if (liveSelected) {
+    const score = `${liveSelected.homeScore ?? 0}-${liveSelected.awayScore ?? 0}`;
+    const minute = liveSelected.minute ? `${liveSelected.minute}'` : liveSelected.statusText;
+    const moreLive = liveCount > 1 ? ` · +${liveCount - 1} more live` : "";
+    return {
+      badgeText: formatLiveBadgeScore(liveSelected),
+      badgeColor: snapshot.stale ? "#d39b21" : "#ff5d4d",
+      title: `${getToolbarTeamLabel(liveSelected.homeTeam)} ${score} ${getToolbarTeamLabel(liveSelected.awayTeam)} · ${minute}${moreLive} · ${getMatchFreshness(snapshot, now)}`,
+      iconMatch: liveSelected,
+    };
+  }
 
   if (!selected) {
     const next = findNextMatch(matches, now);
@@ -31,18 +61,6 @@ export function getToolbarPresentation(snapshot, state, now = Date.now()) {
         ? `Next: ${next.homeTeam.name || "TBD"} vs ${next.awayTeam.name || "TBD"} · ${new Date(next.kickoff).toLocaleString()}`
         : "Live Scoreboard · No live matches",
       iconMatch: next || null,
-    };
-  }
-
-  if (selected.status === "live") {
-    const score = `${selected.homeScore ?? 0}-${selected.awayScore ?? 0}`;
-    const minute = selected.minute ? `${selected.minute}'` : selected.statusText;
-    const moreLive = liveCount > 1 ? ` · +${liveCount - 1} more live` : "";
-    return {
-      badgeText: score.slice(0, 4),
-      badgeColor: snapshot.stale ? "#d39b21" : "#ff5d4d",
-      title: `${getToolbarTeamLabel(selected.homeTeam)} ${score} ${getToolbarTeamLabel(selected.awayTeam)} · ${minute}${moreLive} · ${getMatchFreshness(snapshot, now)}`,
-      iconMatch: selected,
     };
   }
 
@@ -64,45 +82,105 @@ export function getToolbarPresentation(snapshot, state, now = Date.now()) {
   };
 }
 
-function getTeamColors(team) {
-  const colors = Array.isArray(team?.colors) && team.colors.length
-    ? team.colors
-    : ["#082e4d", "#f7e9bd", "#00eaff"];
-  return colors.slice(0, 3);
-}
+function drawSoccerBall(context, cx, cy, radius) {
+  context.save();
 
-function drawFlagPanel(context, x, y, width, height, colors, direction = "vertical") {
-  const stops = colors.length || 1;
-  colors.forEach((color, index) => {
-    context.fillStyle = color;
-    if (direction === "horizontal") {
-      const stripeHeight = height / stops;
-      context.fillRect(x, y + index * stripeHeight, width, stripeHeight + 1);
-      return;
+  context.beginPath();
+  context.arc(cx, cy, radius, 0, Math.PI * 2);
+  context.clip();
+
+  const seamWidth = Math.max(1.2, radius * 0.14);
+  const outerPatchRadius = radius * 0.27;
+  const centerPatchRadius = radius * 0.28;
+
+  context.fillStyle = "#ffffff";
+  context.beginPath();
+  context.arc(cx, cy, radius, 0, Math.PI * 2);
+  context.fill();
+
+  context.fillStyle = "#eef6f8";
+  context.beginPath();
+  context.arc(cx - radius * 0.26, cy - radius * 0.28, radius * 0.74, 0, Math.PI * 2);
+  context.fill();
+
+  context.fillStyle = "#111111";
+  context.strokeStyle = "#2f3a3f";
+  context.lineWidth = Math.max(1, seamWidth * 0.7);
+  context.lineCap = "round";
+  context.lineJoin = "round";
+
+  context.beginPath();
+  for (let index = 0; index < 5; index += 1) {
+    const angle = -Math.PI / 2 + (index * Math.PI * 2) / 5;
+    const x = cx + Math.cos(angle) * centerPatchRadius;
+    const y = cy + Math.sin(angle) * centerPatchRadius;
+    if (index === 0) {
+      context.moveTo(x, y);
+    } else {
+      context.lineTo(x, y);
     }
+  }
+  context.closePath();
+  context.fill();
 
-    const stripeWidth = width / stops;
-    context.fillRect(x + index * stripeWidth, y, stripeWidth + 1, height);
-  });
-}
-
-function roundedRect(context, x, y, width, height, radius) {
-  if (typeof context.roundRect === "function") {
-    context.roundRect(x, y, width, height, radius);
-    return;
+  for (let index = 0; index < 5; index += 1) {
+    const angle = -Math.PI / 2 + (index * Math.PI * 2) / 5;
+    const startX = cx + Math.cos(angle) * centerPatchRadius * 0.88;
+    const startY = cy + Math.sin(angle) * centerPatchRadius * 0.88;
+    const endX = cx + Math.cos(angle) * radius * 0.88;
+    const endY = cy + Math.sin(angle) * radius * 0.88;
+    context.beginPath();
+    context.moveTo(startX, startY);
+    context.lineTo(endX, endY);
+    context.stroke();
   }
 
-  const right = x + width;
-  const bottom = y + height;
-  context.moveTo(x + radius, y);
-  context.lineTo(right - radius, y);
-  context.quadraticCurveTo(right, y, right, y + radius);
-  context.lineTo(right, bottom - radius);
-  context.quadraticCurveTo(right, bottom, right - radius, bottom);
-  context.lineTo(x + radius, bottom);
-  context.quadraticCurveTo(x, bottom, x, bottom - radius);
-  context.lineTo(x, y + radius);
-  context.quadraticCurveTo(x, y, x + radius, y);
+  if (radius >= 12) {
+    for (let index = 0; index < 5; index += 1) {
+      const angle = -Math.PI / 2 + (index * Math.PI * 2) / 5;
+      const patchCx = cx + Math.cos(angle) * radius * 0.76;
+      const patchCy = cy + Math.sin(angle) * radius * 0.76;
+      const rotation = angle + Math.PI;
+      context.beginPath();
+      for (let point = 0; point < 5; point += 1) {
+        const pointAngle = rotation + (point * Math.PI * 2) / 5;
+        const x = patchCx + Math.cos(pointAngle) * outerPatchRadius;
+        const y = patchCy + Math.sin(pointAngle) * outerPatchRadius;
+        if (point === 0) {
+          context.moveTo(x, y);
+        } else {
+          context.lineTo(x, y);
+        }
+      }
+      context.closePath();
+      context.fill();
+    }
+  }
+
+  context.restore();
+
+  context.save();
+  context.strokeStyle = "#071014";
+  context.lineWidth = Math.max(1.6, radius * 0.16);
+  context.beginPath();
+  context.arc(cx, cy, radius - context.lineWidth / 2, 0, Math.PI * 2);
+  context.stroke();
+
+  context.strokeStyle = "#ffffff";
+  context.lineWidth = Math.max(0.8, radius * 0.07);
+  context.beginPath();
+  context.arc(cx, cy, radius - context.lineWidth, 0, Math.PI * 2);
+  context.stroke();
+
+  if (radius >= 18) {
+    context.strokeStyle = "rgba(0, 215, 255, 0.85)";
+    context.lineWidth = Math.max(1, radius * 0.06);
+    context.beginPath();
+    context.arc(cx, cy, radius + context.lineWidth * 0.2, -Math.PI * 0.18, Math.PI * 1.14);
+    context.stroke();
+  }
+
+  context.restore();
 }
 
 function drawToolbarIcon(size, match) {
@@ -112,45 +190,11 @@ function drawToolbarIcon(size, match) {
   const context = canvas.getContext("2d");
   if (!context) return null;
 
-  const homeColors = getTeamColors(match?.homeTeam);
-  const awayColors = getTeamColors(match?.awayTeam);
-  const pad = Math.max(1, Math.round(size * 0.08));
-  const inner = size - pad * 2;
-  const radius = Math.max(3, Math.round(size * 0.18));
+  const center = size / 2;
+  const ballRadius = Math.max(6, size * 0.44);
 
   context.clearRect(0, 0, size, size);
-  context.fillStyle = "#031b2b";
-  context.beginPath();
-  roundedRect(context, 0, 0, size, size, radius);
-  context.fill();
-
-  context.save();
-  context.beginPath();
-  roundedRect(context, pad, pad, inner, inner, Math.max(2, radius - 1));
-  context.clip();
-
-  drawFlagPanel(context, pad, pad, inner / 2, inner, homeColors, "horizontal");
-  drawFlagPanel(context, pad + inner / 2, pad, inner / 2, inner, awayColors, "vertical");
-
-  context.fillStyle = "rgba(0, 234, 255, 0.18)";
-  context.fillRect(pad, pad, inner, inner);
-  context.fillStyle = "rgba(3, 27, 43, 0.28)";
-  context.fillRect(pad + inner / 2 - 1, pad, 2, inner);
-  context.restore();
-
-  context.strokeStyle = "#00eaff";
-  context.lineWidth = Math.max(1, Math.round(size * 0.05));
-  context.beginPath();
-  roundedRect(context, pad, pad, inner, inner, Math.max(2, radius - 1));
-  context.stroke();
-
-  context.fillStyle = "#fff7d3";
-  context.beginPath();
-  context.arc(size / 2, size / 2, Math.max(2, size * 0.13), 0, Math.PI * 2);
-  context.fill();
-  context.strokeStyle = "#082e4d";
-  context.lineWidth = Math.max(1, Math.round(size * 0.025));
-  context.stroke();
+  drawSoccerBall(context, center, center, ballRadius);
 
   return context.getImageData(0, 0, size, size);
 }

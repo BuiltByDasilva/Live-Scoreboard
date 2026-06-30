@@ -4,18 +4,12 @@ import {
   loadLiveSnapshot,
   refreshLiveSnapshot,
 } from "./src/live-data.js";
-import { MONETIZATION_API_BASE, PURCHASE_OFFERS, PURCHASE_STATUS, SUPABASE_ANON_KEY } from "./src/monetization.js";
-import { loadState, saveState, saveLicenseId, setEntitlements, setPurchaseStatus } from "./src/state.js";
+import { loadState, saveState } from "./src/state.js";
 import { getToolbarIconImageData, getToolbarPresentation } from "./src/toolbar.js";
 
 const REFRESH_ALARM = "live-scoreboard-refresh";
 const REMINDER_ALARM = "live-scoreboard-reminders";
 const BADGE_RESET_ALARM = "live-scoreboard-badge-reset";
-
-const SUPABASE_FUNCTION_HEADERS = {
-  apikey: SUPABASE_ANON_KEY,
-  Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-};
 
 chrome.runtime.onInstalled.addListener(async () => {
   await chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
@@ -37,18 +31,6 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
   if (message?.type === "SCOREBOARD_REFRESHED" || message?.type === "PINNED_MATCH_UPDATED") {
     updateBadgeFromCache();
-  }
-
-  if (message?.type === "START_CHECKOUT") {
-    responsePromise = startCheckout(message);
-  }
-
-  if (message?.type === "RESTORE_PURCHASES") {
-    responsePromise = restorePurchases();
-  }
-
-  if (message?.type === "REDEEM_SKIN") {
-    responsePromise = redeemSkin(message.skinId);
   }
 
   if (!responsePromise) {
@@ -153,89 +135,6 @@ async function checkWatchlistReminders() {
   }
 
   await saveState({ lastNotifiedMatchIds: Array.from(nextNotifiedIds) });
-}
-
-async function ensureLicenseId() {
-  const state = await loadState();
-  if (state.licenseId) {
-    return state.licenseId;
-  }
-
-  const licenseId = crypto.randomUUID().replaceAll("-", "");
-  await saveLicenseId(licenseId);
-  return licenseId;
-}
-
-async function startCheckout(message) {
-  const payload = {
-    licenseId: await ensureLicenseId(),
-    sku: message.sku,
-    skinId: message.skinId || null,
-  };
-
-  if (!Object.hasOwn(PURCHASE_OFFERS, payload.sku)) {
-    await setPurchaseStatus(PURCHASE_STATUS.error, payload);
-    return { ok: false, error: "invalid_checkout_request" };
-  }
-
-  await setPurchaseStatus(PURCHASE_STATUS.pending, payload);
-  try {
-    const response = await fetch(`${MONETIZATION_API_BASE}/checkout`, {
-      method: "POST",
-      headers: { ...SUPABASE_FUNCTION_HEADERS, "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) throw new Error(`Checkout failed with ${response.status}.`);
-    const data = await response.json();
-    const checkoutUrl = new URL(data.checkoutUrl);
-    if (checkoutUrl.protocol !== "https:") throw new Error("Checkout URL must use HTTPS.");
-    await chrome.tabs.create({ url: checkoutUrl.href });
-    return { ok: true, checkoutUrl: checkoutUrl.href };
-  } catch {
-    await setPurchaseStatus(PURCHASE_STATUS.error, payload);
-    return { ok: false, error: "checkout_request_failed" };
-  }
-}
-
-async function restorePurchases() {
-  const licenseId = await ensureLicenseId();
-  try {
-    const url = `${MONETIZATION_API_BASE}/entitlements/${encodeURIComponent(licenseId)}`;
-    const response = await fetch(url, {
-      headers: { ...SUPABASE_FUNCTION_HEADERS, Accept: "application/json" },
-    });
-    if (!response.ok) throw new Error(`Restore failed with ${response.status}.`);
-    const entitlements = await response.json();
-    await setEntitlements(entitlements, PURCHASE_STATUS.restored);
-    const hasUnlock = Boolean(
-      entitlements?.all2026
-      || (Array.isArray(entitlements?.skins) && entitlements.skins.some((skinId) => skinId !== "default"))
-      || (Number(entitlements?.credits) || 0) > 0
-    );
-    return { ok: true, restored: hasUnlock, entitlements };
-  } catch {
-    await setPurchaseStatus(PURCHASE_STATUS.error, { restore: true });
-    return { ok: false, error: "restore_request_failed" };
-  }
-}
-
-async function redeemSkin(skinId) {
-  const payload = { licenseId: await ensureLicenseId(), skinId };
-  try {
-    const response = await fetch(`${MONETIZATION_API_BASE}/entitlements/redeem`, {
-      method: "POST",
-      headers: { ...SUPABASE_FUNCTION_HEADERS, "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (!response.ok) throw new Error(`Redemption failed with ${response.status}.`);
-    const entitlements = await response.json();
-    await setEntitlements(entitlements, PURCHASE_STATUS.restored);
-    return { ok: true, entitlements };
-  } catch {
-    await setPurchaseStatus(PURCHASE_STATUS.error, { redeemSkinId: skinId });
-    return { ok: false, error: "redeem_request_failed" };
-  }
 }
 
 ensureAlarms();

@@ -1,11 +1,12 @@
 {
   "manifest_version": 3,
-  "name": "Live Scoreboard",
-  "version": "1.0.0",
-  "description": "Glanceable live football scores in the Chrome toolbar, watchlist reminders, and original country-inspired skins.",
+  "name": "__MSG_extensionName__",
+  "version": "2.0.0",
+  "default_locale": "en",
+  "description": "__MSG_extensionDescription__",
   "minimum_chrome_version": "116",
   "action": {
-    "default_title": "Open Live Scoreboard",
+    "default_title": "__MSG_extensionActionTitle__",
     "default_icon": {
       "16": "assets/icon16.png",
       "32": "assets/icon32.png",
@@ -31,8 +32,7 @@
     "storage"
   ],
   "host_permissions": [
-    "https://site.api.espn.com/*",
-    "https://kmtpuvtswatkilvkffqb.supabase.co/*"
+    "https://site.api.espn.com/*"
   ],
   "side_panel": {
     "default_path": "sidepanel.html"

@@ -6,6 +6,7 @@ import {
   SUPPORTED_LOCALES,
   t,
 } from "./i18n.js";
+import { buildBracket } from "./bracket.js";
 import {
   getSafeBundledSnapshot,
   LIVE_CACHE_KEY,
@@ -13,14 +14,11 @@ import {
   refreshLiveSnapshot,
 } from "./live-data.js";
 import { findNextMatch, getOrderedMatches, getTeamIdsInMatchOrder } from "./match-order.js";
-import { getCheckoutCopy, getOffer, PURCHASE_STATUS } from "./monetization.js";
 import { applySkin, getSkin, SKINS } from "./skins.js";
 import {
   loadState,
   setActiveSkin,
-  setEntitlements,
   setLanguage,
-  setPurchaseStatus,
   setToolbarMatch,
   toggleWatchedMatch,
 } from "./state.js";
@@ -32,22 +30,43 @@ const elements = {
   matchList: document.querySelector("#matchList"),
   watchlist: document.querySelector("#watchlist"),
   watchlistEmpty: document.querySelector("#watchlistEmpty"),
+  bracketBoard: document.querySelector("#bracketBoard"),
   skinList: document.querySelector("#skinList"),
   skinSearch: document.querySelector("#skinSearch"),
-  skinFilter: document.querySelector("#skinFilter"),
   themeStage: document.querySelector("#themeStage"),
-  purchaseStatus: document.querySelector("#purchaseStatus"),
-  licenseSupport: document.querySelector("#licenseSupport"),
-  restoreButton: document.querySelector("#restoreButton"),
-  copyLicenseButton: document.querySelector("#copyLicenseButton"),
+  pinnedSpotlight: document.querySelector("#pinnedSpotlight"),
   favoritesOnly: document.querySelector("#favoritesOnly"),
+  languageDock: document.querySelector("#languageDock"),
+  languageCollapse: document.querySelector("#languageCollapse"),
   languageToggle: document.querySelector("#languageToggle"),
   languageMenu: document.querySelector("#languageMenu"),
   languageCurrent: document.querySelector("#languageCurrent"),
+  dockSoccerBall: document.querySelector("#dockSoccerBall"),
   refreshButton: document.querySelector("#refreshButton"),
-  tabs: document.querySelectorAll(".tab"),
-  panels: document.querySelectorAll(".panel")
+  tabs: [],
+  panels: []
 };
+
+const allTabs = Array.from(document.querySelectorAll(".tabs .tab"));
+const allPanels = Array.from(document.querySelectorAll(".panel"));
+const allowedTabIds = new Set(["live", "watchlist", "bracket", "skins"]);
+const allowedPanelIds = new Set(["live", "watchlist", "bracket", "skins"]);
+
+allTabs.forEach((tab) => {
+  if (allowedTabIds.has(tab.dataset.tab)) {
+    elements.tabs.push(tab);
+    return;
+  }
+  tab.remove();
+});
+
+allPanels.forEach((panel) => {
+  if (allowedPanelIds.has(panel.dataset.panel)) {
+    elements.panels.push(panel);
+    return;
+  }
+  panel.remove();
+});
 
 let appState = await loadState();
 if (!appState.languageId) {
@@ -57,6 +76,7 @@ let liveSnapshot = await loadLiveSnapshot() || getSafeBundledSnapshot();
 let matches = liveSnapshot.matches;
 let previewSkinId = null;
 let languageId = resolveLocaleId(appState.languageId);
+let isLanguageDockCollapsed = false;
 applySkin(appState.activeSkinId);
 
 function tr(key, vars) {
@@ -83,6 +103,18 @@ const PIN_ICON = `
     <path d="M12 16v5"/>
   </svg>
 `;
+
+function getPinnedMatch() {
+  if (!appState.toolbarMatchId) {
+    return null;
+  }
+  return matches.find((match) => match.id === appState.toolbarMatchId) || null;
+}
+
+function formatPinnedMeta(match, dateLabel) {
+  const state = match.status === "live" ? tr("livePrefix") : match.status === "final" ? tr("finalLabel") : tr("matchesTitle");
+  return `${escapeAttribute(match.stage || tr("unavailable"))} · ${escapeAttribute(state)} · ${escapeAttribute(dateLabel || "")}`;
+}
 
 function applyLocaleDocumentState() {
   const locale = getLocale(languageId);
@@ -130,12 +162,25 @@ function renderLanguageMenu() {
   }).join("");
 }
 
-function hasUnlockedEntitlements(entitlement = appState.entitlementCache) {
-  return Boolean(
-    entitlement?.all2026
-    || entitlement?.credits > 0
-    || (Array.isArray(entitlement?.skins) && entitlement.skins.some((skinId) => skinId !== "default"))
-  );
+function renderLanguageDockState() {
+  const collapseLabel = tr(isLanguageDockCollapsed ? "showLanguagePanel" : "hideLanguagePanel");
+
+  elements.languageDock?.classList.toggle("is-collapsed", isLanguageDockCollapsed);
+  elements.dockSoccerBall?.classList.toggle("is-collapsed", isLanguageDockCollapsed);
+
+  if (elements.languageCollapse) {
+    elements.languageCollapse.setAttribute("aria-label", collapseLabel);
+    elements.languageCollapse.setAttribute("title", collapseLabel);
+    elements.languageCollapse.setAttribute("aria-pressed", String(isLanguageDockCollapsed));
+  }
+}
+
+function setLanguageDockCollapsed(collapsed) {
+  isLanguageDockCollapsed = collapsed;
+  if (collapsed) {
+    setLanguageMenuOpen(false);
+  }
+  renderLanguageDockState();
 }
 
 const MATCH_LOCATION_PRESETS = [
@@ -143,13 +188,13 @@ const MATCH_LOCATION_PRESETS = [
     keys: ["vancouver", "toronto", "montreal", "ottawa", "bc place", "bmo field"],
     country: "Canada",
     flagUrl: getLocationFlagUrl("Canada"),
-    background: "linear-gradient(128deg, rgba(199, 87, 55, 0.18), rgba(125, 178, 188, 0.18) 44%, rgba(255, 248, 224, 0.78) 100%)",
+    background: "radial-gradient(circle at 18% 22%, rgba(255, 116, 127, 0.18), transparent 30%), radial-gradient(circle at 82% 76%, rgba(111, 237, 255, 0.18), transparent 36%), linear-gradient(135deg, rgba(7, 23, 39, 0.82), rgba(18, 54, 81, 0.9))",
   },
   {
     keys: ["mexico city", "monterrey", "guadalajara", "estadio", "zapopan", "guadalupe", "azteca", "bbva", "akron"],
     country: "Mexico",
     flagUrl: getLocationFlagUrl("Mexico"),
-    background: "linear-gradient(128deg, rgba(96, 142, 73, 0.22), rgba(197, 91, 53, 0.16) 42%, rgba(255, 248, 224, 0.82) 100%)",
+    background: "radial-gradient(circle at 12% 26%, rgba(97, 255, 154, 0.18), transparent 28%), radial-gradient(circle at 88% 18%, rgba(255, 130, 102, 0.2), transparent 30%), linear-gradient(135deg, rgba(5, 20, 34, 0.88), rgba(29, 69, 63, 0.94))",
   },
   {
     keys: [
@@ -187,7 +232,7 @@ const MATCH_LOCATION_PRESETS = [
     ],
     country: "United States",
     flagUrl: getLocationFlagUrl("United States"),
-    background: "linear-gradient(128deg, rgba(31, 76, 121, 0.2), rgba(184, 75, 54, 0.14) 42%, rgba(255, 248, 224, 0.8) 100%)",
+    background: "radial-gradient(circle at 14% 20%, rgba(255, 90, 161, 0.18), transparent 28%), radial-gradient(circle at 82% 22%, rgba(78, 219, 255, 0.2), transparent 32%), linear-gradient(135deg, rgba(8, 19, 35, 0.9), rgba(24, 39, 78, 0.92))",
   },
 ];
 
@@ -255,12 +300,30 @@ function renderSkinSymbols(skin, className = "skin-symbols") {
   `;
 }
 
+function renderSkinFlag(skin, className = "skin-flag", altSuffix = "flag") {
+  if (!skin?.flagUrl) return "";
+  const alt = skin.id === "default" ? tr("themeIconAlt") : `${skin.team} ${altSuffix}`;
+  return `<img class="${className}" src="${skin.flagUrl}" alt="${escapeAttribute(alt)}" loading="lazy">`;
+}
+
+function renderLandmarkBadge(skin, className = "landmark-badge") {
+  if (!skin?.landmark?.name) return "";
+  return `<span class="${className}">${escapeAttribute(skin.landmark.name)}</span>`;
+}
+
 function formatKickoff(value) {
   return new Intl.DateTimeFormat(getLocale(languageId).locale, {
     weekday: "short",
     hour: "numeric",
     minute: "2-digit"
   }).format(new Date(value));
+}
+
+function formatKickoffDate(value) {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "2-digit"
+  }).format(new Date(value)).toUpperCase();
 }
 
 function statusLabel(match) {
@@ -273,6 +336,18 @@ function statusLabel(match) {
   }
 
   return formatKickoff(match.kickoff);
+}
+
+function heroStateLabel(match) {
+  if (match.status === "live") return tr("livePrefix");
+  if (match.status === "final") return tr("finalLabel");
+  return "Next";
+}
+
+function heroTimeLabel(match) {
+  if (match.status === "live") return match.minute ? `${match.minute}'` : tr("livePrefix");
+  if (match.status === "final") return tr("finalLabel");
+  return formatKickoffTime(match.kickoff);
 }
 
 function getScore(match) {
@@ -294,21 +369,21 @@ function renderTimeBlock(match) {
   if (match.status === "live") {
     return `
       <strong>${match.minute ? `${match.minute}'` : tr("livePrefix")}</strong>
-      <span>${tr("livePrefix")}</span>
+      <span>${formatKickoffDate(match.kickoff)}</span>
     `;
   }
 
   if (match.status === "final") {
     return `
       <strong>${tr("finalLabel")}</strong>
-      <span>${match.stage}</span>
+      <span>${formatKickoffDate(match.kickoff)}</span>
     `;
   }
 
-  const [time, period = ""] = formatKickoffTime(match.kickoff).split(" ");
+  const kickoffLabel = formatKickoffTime(match.kickoff);
   return `
-    <strong>${time}</strong>
-    <span>${period}</span>
+    <strong>${formatKickoffDate(match.kickoff)}</strong>
+    <span>${kickoffLabel}</span>
   `;
 }
 
@@ -333,26 +408,50 @@ function renderHero() {
     return;
   }
 
+  const heroSkin = getDisplayedSkin();
+  const landmark = heroSkin.landmark || getSkin("default").landmark;
+  const isCountrySkin = heroSkin.id !== "default" && heroSkin.id !== "classic-scoreboard";
+  const patternKey = heroSkin.patternKey || "default";
+  const countryScene = isCountrySkin
+    ? `
+      <div class="hero-country-scene pattern-${escapeAttribute(patternKey)}" aria-hidden="true">
+        <span class="hero-pattern-wash"></span>
+        <img class="hero-flag-ghost" src="${escapeAttribute(heroSkin.flagUrl)}" alt="" loading="lazy">
+        <span class="hero-culture-mark">${escapeAttribute(heroSkin.code || "")}</span>
+      </div>
+    `
+    : "";
+
   elements.heroScore.dataset.status = featured.status;
+  elements.heroScore.dataset.landmark = landmark.type;
   elements.heroScore.innerHTML = `
+    ${countryScene}
     <div class="hero-effects" aria-hidden="true">
       <span class="floodlight floodlight-left"></span>
       <span class="floodlight floodlight-right"></span>
       <span class="light-trail trail-one"></span>
       <span class="light-trail trail-two"></span>
-      <span class="orbit-ball"></span>
+      <img class="orbit-ball" src="assets/soccer-ball.svg" alt="" aria-hidden="true" loading="lazy">
+    </div>
+    <div class="hero-landmark landmark-${escapeAttribute(landmark.type)}" aria-hidden="true">
+      <span class="landmark-sun"></span>
+      <span class="landmark-figure"></span>
+      <span class="landmark-name">${escapeAttribute(landmark.name)}</span>
     </div>
     <div class="hero-content">
       <div class="status-row">
-        <span class="match-state ${featured.status}">${statusLabel(featured)}</span>
-        <span>${featured.stage}</span>
+        <span class="match-state ${featured.status}">${heroStateLabel(featured)}</span>
+        <span class="hero-stage">${featured.stage}</span>
       </div>
       <div class="scoreline">
         <div class="team-block">
           ${renderTeamFlag(featured.homeTeam, "team-code team-flag")}
           <p class="team-name">${featured.homeTeam.name}</p>
         </div>
-        <div class="score">${getScore(featured)}</div>
+        <div class="score-stack">
+          <div class="score">${getScore(featured)}</div>
+          <span class="hero-minute">${heroTimeLabel(featured)}</span>
+        </div>
         <div class="team-block">
           ${renderTeamFlag(featured.awayTeam, "team-code team-flag")}
           <p class="team-name">${featured.awayTeam.name}</p>
@@ -375,7 +474,7 @@ function createMatchCard(match) {
 
   return `
     <article class="match-card is-${statusClass} ${locationFlagClass}" data-match-id="${match.id}" style="${locationFlagStyle} --match-location-bg:${location.background};">
-      <div class="match-time" aria-label="${escapeAttribute(statusLabel(match))}">
+      <div class="match-time is-${statusClass}" aria-label="${escapeAttribute(statusLabel(match))}">
         ${renderTimeBlock(match)}
       </div>
       <div class="match-teams">
@@ -420,6 +519,282 @@ function renderMatches() {
   elements.watchlistEmpty.classList.toggle("is-visible", watched.length === 0);
 }
 
+function formatBracketKickoff(value) {
+  return new Intl.DateTimeFormat(getLocale(languageId).locale, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
+
+function getBracketStatusLabel(match) {
+  if (match.status === "live") return match.statusText || tr("livePrefix");
+  if (match.status === "final") return tr("finalLabel");
+  return tr("upcomingLabel");
+}
+
+function renderBracketSlot(slot, match, side) {
+  const isWinner = slot.team?.id && slot.team.id === match.winnerId;
+  const isLoser = slot.team?.id && slot.team.id === match.loserId;
+  const score = side === "home" ? match.homeScore : match.awayScore;
+  const scoreLabel = match.status === "upcoming" || score == null ? "" : `<strong>${escapeAttribute(score)}</strong>`;
+  const seedLabel = slot.seed && slot.seed !== slot.label ? `<small>${escapeAttribute(slot.seed)}</small>` : "";
+  const teamMark = slot.team
+    ? renderTeamFlag(slot.team, "bracket-team-flag team-flag")
+    : `<span class="bracket-seed-icon">${escapeAttribute(slot.seed?.slice(0, 2) || "?")}</span>`;
+
+  return `
+    <div class="bracket-slot ${isWinner ? "is-winner" : ""} ${isLoser ? "is-loser" : ""} is-${escapeAttribute(slot.status)}">
+      ${teamMark}
+      <span class="bracket-slot-name">
+        ${escapeAttribute(slot.label)}
+        ${seedLabel}
+      </span>
+      ${scoreLabel}
+    </div>
+  `;
+}
+
+function renderBracketMatch(match) {
+  return `
+    <article class="bracket-match is-${escapeAttribute(match.status)}">
+      <div class="bracket-match-top">
+        <span>#${escapeAttribute(match.num)}</span>
+        <span>${escapeAttribute(getBracketStatusLabel(match))}</span>
+      </div>
+      <div class="bracket-slots">
+        ${renderBracketSlot(match.home, match, "home")}
+        ${renderBracketSlot(match.away, match, "away")}
+      </div>
+      <div class="bracket-match-meta">
+        <span>${escapeAttribute(formatBracketKickoff(match.kickoff))}</span>
+        <span>${escapeAttribute(match.venue)}</span>
+      </div>
+    </article>
+  `;
+}
+
+function renderEliminatedTeam(entry) {
+  const dateLabel = entry.date ? formatBracketKickoff(entry.date) : tr("unavailable");
+  const byLabel = entry.eliminatedBy || tr("unavailable");
+  const scoreLabel = entry.score ? `<span>${escapeAttribute(entry.score)}</span>` : "";
+
+  return `
+    <article class="eliminated-card">
+      ${renderTeamFlag(entry.team, "eliminated-flag team-flag")}
+      <div>
+        <h3>${escapeAttribute(entry.team.name)}</h3>
+        <p>${escapeAttribute(tr("eliminatedBy", { team: byLabel }))}</p>
+        <small>${escapeAttribute(entry.stage)} · ${escapeAttribute(dateLabel)}</small>
+      </div>
+      ${scoreLabel}
+    </article>
+  `;
+}
+
+function renderBracket() {
+  if (!elements.bracketBoard) return;
+
+  const bracket = buildBracket(matches);
+  const nextMatch = bracket.stats.nextMatch;
+  const eliminatedMarkup = bracket.eliminated.length
+    ? bracket.eliminated.map(renderEliminatedTeam).join("")
+    : `
+      <div class="bracket-empty">
+        <strong>${escapeAttribute(tr("eliminatedNoneTitle"))}</strong>
+        <span>${escapeAttribute(tr("eliminatedNoneCopy"))}</span>
+      </div>
+    `;
+
+  elements.bracketBoard.innerHTML = `
+    <div class="bracket-summary">
+      <div>
+        <span>${escapeAttribute(tr("bracketRemaining"))}</span>
+        <strong>${escapeAttribute(bracket.stats.remainingTeams)}</strong>
+      </div>
+      <div>
+        <span>${escapeAttribute(tr("bracketCompleted"))}</span>
+        <strong>${escapeAttribute(`${bracket.stats.completedKnockouts}/${bracket.stats.totalKnockouts}`)}</strong>
+      </div>
+      <div>
+        <span>${escapeAttribute(tr("bracketNext"))}</span>
+        <strong>${escapeAttribute(nextMatch ? `#${nextMatch.num}` : tr("finalLabel"))}</strong>
+      </div>
+    </div>
+    <p class="bracket-feed-note">${escapeAttribute(tr("bracketFeedNote"))}</p>
+    <div class="bracket-scroll-shell">
+      <div class="bracket-scroll-cue" aria-hidden="true">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+      <div class="bracket-scroll" role="list" tabindex="0" aria-label="${escapeAttribute(tr("bracketTitle"))}">
+        ${bracket.rounds.map((round) => `
+          <section class="bracket-round" role="listitem">
+            <h3>${escapeAttribute(round.name)}</h3>
+            <div class="bracket-round-list">
+              ${round.matches.map(renderBracketMatch).join("")}
+            </div>
+          </section>
+        `).join("")}
+      </div>
+    </div>
+    <section class="eliminated-section">
+      <div class="section-heading">
+        <h2>${escapeAttribute(tr("eliminatedTitle"))}</h2>
+        <span class="quiet-note">${escapeAttribute(tr("eliminatedNote"))}</span>
+      </div>
+      <div class="eliminated-list">
+        ${eliminatedMarkup}
+      </div>
+    </section>
+  `;
+
+  const bracketScroller = elements.bracketBoard.querySelector(".bracket-scroll");
+  bracketScroller?.addEventListener("wheel", (event) => {
+    if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
+    event.preventDefault();
+    bracketScroller.scrollBy({
+      left: event.deltaY,
+      behavior: "smooth",
+    });
+  }, { passive: false });
+}
+
+function renderPinnedPanel() {
+  const pinned = getPinnedMatch();
+  if (!elements.pinnedSpotlight) {
+    return;
+  }
+
+  if (!pinned) {
+    elements.pinnedSpotlight.innerHTML = `
+      <div class="pinned-empty">
+        <strong>${escapeAttribute(tr("pinnedNoMatchTitle"))}</strong>
+        <span>${escapeAttribute(tr("pinnedNoMatchCopy"))}</span>
+      </div>
+    `;
+    return;
+  }
+
+  const location = getMatchLocation(pinned);
+  const locationFlag = location.flagUrl
+    ? renderFlagIcon(location.flagUrl, `${location.country} flag`, "pinned-location-flag", location.country)
+    : "";
+
+  const lineup = [
+    renderTeamFlag(pinned.homeTeam, "team-code team-flag"),
+    renderTeamFlag(pinned.awayTeam, "team-code team-flag"),
+  ];
+
+  const kickoff = formatKickoffTime(pinned.kickoff);
+  const kickoffDate = formatKickoffDate(pinned.kickoff);
+  const featuredSkin = getDisplayedSkin();
+  const scoreA = pinned.status === "upcoming" ? "-" : `${pinned.homeScore ?? "-"}`;
+  const scoreB = pinned.status === "upcoming" ? "-" : `${pinned.awayScore ?? "-"}`;
+  const scoreLabel = pinned.status === "live"
+    ? pinned.minute ? `${tr("livePrefix")} ${pinned.minute}'` : tr("livePrefix")
+    : pinned.status === "final"
+      ? tr("finalLabel")
+      : tr("upcomingLabel");
+  const matchLabel = `${formatKickoffDate(pinned.kickoff)} · ${scoreLabel}`;
+  const kickoffMinute = formatKickoffTime(pinned.kickoff);
+  const venueText = pinned.venue || tr("location");
+  const stageLine = `${tr("matchStage")}: ${pinned.stage || tr("unavailable")}`;
+  const kickoffUtc = `${kickoff} ${tr("utcLabel")}`;
+  const teamCodes = `${pinned.homeTeam.code || tr("tbd")} · ${pinned.awayTeam.code || tr("tbd")}`;
+  const culturePulse = `${featuredSkin?.culturalNote || ""} ${featuredSkin?.symbols ? `| ${tr("cultureSignal")}: ${featuredSkin.symbols.myth || ""}` : ""}`.trim();
+  const teamHighlight = `${pinned.homeTeam.name} vs ${pinned.awayTeam.name}`;
+  const kickoffCountdown = pinned.status === "upcoming"
+    ? Math.max(0, Math.round((new Date(pinned.kickoff).getTime() - Date.now()) / 60000))
+    : null;
+  const kickoffHint = kickoffCountdown === null
+    ? tr("upcomingLabel")
+    : kickoffCountdown > 0
+      ? `${kickoffCountdown}m ${tr("watch")}`
+      : tr("watch");
+  const stageLabel = pinned.stage || tr("unavailable");
+  const cultureLabel = featuredSkin?.symbols?.myth || featuredSkin?.motif || tr("cultureSignal");
+  const scoreboardMarkup = pinned.status === "upcoming"
+    ? `
+      <div class="pinned-scoreboard is-upcoming" aria-label="${escapeAttribute(matchLabel)}">
+        <strong>${escapeAttribute(kickoffMinute)}</strong>
+        <span>${escapeAttribute(kickoffDate)}</span>
+      </div>
+    `
+    : `
+      <div class="pinned-scoreboard" aria-label="${escapeAttribute(matchLabel)}">
+        <span>${escapeAttribute(scoreA)}</span>
+        <span class="score-sep">:</span>
+        <span>${escapeAttribute(scoreB)}</span>
+      </div>
+    `;
+  const spotlightMeta = [
+    locationFlag ? `<span class="location-pill">${locationFlag} ${escapeAttribute(location.country)}</span>` : "",
+    `<span>${escapeAttribute(stageLabel)}</span>`,
+    kickoff ? `<span>${escapeAttribute(`${kickoff} UTC`)}</span>` : "",
+    `<span>${escapeAttribute(pinned.status === "upcoming" ? kickoffHint : scoreLabel)}</span>`,
+  ].filter(Boolean).join("");
+
+  elements.pinnedSpotlight.innerHTML = `
+    <article class="match-card pinned-match-card is-${escapeAttribute(pinned.status)}" style="--match-location-bg:${location.background};">
+      <div class="pinned-topline">
+        <span class="pinned-status-chip is-${escapeAttribute(pinned.status)}">${escapeAttribute(scoreLabel)}</span>
+        <span class="pinned-stage-pill">${escapeAttribute(stageLabel)}</span>
+      </div>
+      <div class="pinned-headline">
+        <div class="pinned-kickoff" aria-label="${escapeAttribute(formatKickoffLabelForPin(pinned))}">
+          <strong>${escapeAttribute(formatKickoffDate(pinned.kickoff))}</strong>
+          <span>${escapeAttribute(`${kickoffMinute} ${tr("utcLabel") || "UTC"}`)}</span>
+        </div>
+        <span class="pinned-skin-pill">${escapeAttribute(featuredSkin.name)}</span>
+      </div>
+      <div class="pinned-battle">
+        <div class="pinned-team-row">
+          ${lineup[0]}
+          <span>${escapeAttribute(pinned.homeTeam.name)} <small class="pinned-team-code">${escapeAttribute(pinned.homeTeam.code)}</small></span>
+        </div>
+        ${scoreboardMarkup}
+        <div class="pinned-team-row is-away">
+          ${lineup[1]}
+          <span>${escapeAttribute(pinned.awayTeam.name)} <small class="pinned-team-code">${escapeAttribute(pinned.awayTeam.code)}</small></span>
+        </div>
+      </div>
+      <div class="pinned-summary">
+        <p class="pinned-identity">${escapeAttribute(teamHighlight)}</p>
+        <p>${escapeAttribute(teamCodes)} • ${escapeAttribute(venueText)}</p>
+        <p>${escapeAttribute(culturePulse || tr("noMatchData"))}</p>
+      </div>
+      <div class="pinned-meta">
+        ${spotlightMeta}
+      </div>
+      <div class="match-actions match-actions-pinned">
+        <button class="match-action is-on" type="button" data-pin="${escapeAttribute(pinned.id)}" aria-pressed="true" title="${escapeAttribute(tr("pinTitle"))}">
+          ${tr("unpin")}
+        </button>
+      </div>
+      <div class="pinned-flair">
+        <span>${escapeAttribute(`${tr("cultureSignal")}: ${cultureLabel}`)}</span>
+        <span>${escapeAttribute(`${tr("watch")}: ${kickoffHint}`)}</span>
+        <span>${escapeAttribute(stageLine)}</span>
+        <span>${escapeAttribute(kickoffUtc)}</span>
+      </div>
+      ${renderSkinSymbols(featuredSkin, "pinned-symbols")}
+    </article>
+  `;
+}
+
+function formatKickoffLabelForPin(match) {
+  if (match.status === "live") {
+    return `${tr("livePrefix")} ${match.minute ? `${match.minute}'` : tr("upcomingLabel")}`;
+  }
+  if (match.status === "final") {
+    return tr("finalLabel");
+  }
+  return formatKickoffDate(match.kickoff);
+}
+
 function renderDataStatus() {
   elements.dataStatus.textContent = liveSnapshot.stale
     ? `${tr("cachedData")} ${tr("connectedStatus")}`
@@ -429,20 +804,25 @@ function renderDataStatus() {
 }
 
 function renderThemeStage() {
+  if (!elements.themeStage) {
+    return;
+  }
+
   const skin = getDisplayedSkin();
-  const isUnlocked = appState.unlockedSkinIds.includes(skin.id);
   const isActive = appState.activeSkinId === skin.id && !previewSkinId;
-  const offer = getOffer("skin_single");
-  const canUseCredit = !isUnlocked && appState.entitlementCache.credits > 0;
   const previewMatch = findNextMatch(matches) || getOrderedMatches(matches)[0];
 
   const artwork = skin.id === "default"
     ? `<img class="theme-logo" src="assets/icon128.png" alt="${escapeAttribute(tr("themeIconAlt"))}">`
-    : `<span class="theme-code">${skin.code}</span>`;
+    : `
+      ${renderSkinFlag(skin, "theme-flag")}
+      <span class="theme-code">${skin.code}</span>
+    `;
 
   elements.themeStage.innerHTML = `
     <div class="theme-art" style="--card-pattern:${skin.pattern}">
       ${artwork}
+      ${renderLandmarkBadge(skin, "theme-landmark")}
       <span class="theme-motif">${skin.motif}</span>
       ${renderSkinSymbols(skin, "theme-symbols")}
     </div>
@@ -451,6 +831,7 @@ function renderThemeStage() {
         <p class="theme-team">${skin.team}</p>
         <h2>${skin.name}</h2>
         <p>${skin.culturalNote}</p>
+        ${renderLandmarkBadge(skin)}
         ${renderSkinSymbols(skin)}
       </div>
       <div class="mini-score-preview" aria-label="${escapeAttribute(tr("sampleScoreAria"))}">
@@ -461,29 +842,34 @@ function renderThemeStage() {
         ${renderTeamFlag(previewMatch?.awayTeam, "mini-code")}
       </div>
       <div class="theme-stage-actions">
-        ${isUnlocked && !isActive ? `<button type="button" data-apply-skin="${skin.id}">${tr("applyTheme")}</button>` : ""}
-        ${canUseCredit ? `<button type="button" data-redeem-skin="${skin.id}" class="primary">${tr("useOneSkinCredit")}</button>` : ""}
-        ${!isUnlocked && !canUseCredit ? `<button type="button" data-buy-skin="${skin.id}" class="primary">${getCheckoutCopy(offer.sku)}</button>` : ""}
+        ${isActive ? `<span class="applied-state">${tr("applied")}</span>` : `<button type="button" data-apply-skin="${skin.id}">${tr("apply")}</button>`}
         ${previewSkinId ? `<button type="button" data-cancel-preview>${tr("backToActive")}</button>` : ""}
-        ${isActive ? `<span class="applied-state">${tr("applied")}</span>` : ""}
       </div>
     </div>
   `;
 }
 
 function getFilteredSkins() {
+  if (!elements.skinSearch) {
+    return SKINS;
+  }
+
   const query = elements.skinSearch.value.trim().toLocaleLowerCase();
-  const filter = elements.skinFilter.value;
   const teamOrder = new Map(getTeamIdsInMatchOrder(matches).map((teamId, index) => [teamId, index]));
 
   return SKINS.filter((skin) => {
-    const isUnlocked = appState.unlockedSkinIds.includes(skin.id);
-    const matchesFilter = filter === "all" || (filter === "owned" ? isUnlocked : !isUnlocked);
     const haystack = `${skin.name} ${skin.team} ${skin.motif}`.toLocaleLowerCase();
-    return matchesFilter && (!query || haystack.includes(query));
+    return !query || haystack.includes(query);
   }).sort((a, b) => {
-    if (a.id === "default" || b.id === "default") {
-      return a.id === "default" ? -1 : 1;
+    const featuredSkinOrder = new Map([
+      ["default", 0],
+      ["classic-scoreboard", 1],
+    ]);
+    const featuredA = featuredSkinOrder.get(a.id);
+    const featuredB = featuredSkinOrder.get(b.id);
+
+    if (featuredA !== undefined || featuredB !== undefined) {
+      return (featuredA ?? Number.MAX_SAFE_INTEGER) - (featuredB ?? Number.MAX_SAFE_INTEGER);
     }
 
     const orderA = teamOrder.get(a.id) ?? Number.MAX_SAFE_INTEGER;
@@ -494,19 +880,23 @@ function getFilteredSkins() {
 }
 
 function renderSkins() {
+  if (!elements.skinList || !elements.skinSearch) {
+    return;
+  }
+
   const visibleSkins = getFilteredSkins();
   elements.skinList.innerHTML = visibleSkins.map((skin) => {
-    const isUnlocked = appState.unlockedSkinIds.includes(skin.id);
     const isSelected = previewSkinId === skin.id;
-    const isPreviewing = previewSkinId === skin.id && !isUnlocked;
+    const isPreviewing = previewSkinId === skin.id;
     const isActive = appState.activeSkinId === skin.id && !previewSkinId;
-    const canUseCredit = !isUnlocked && appState.entitlementCache.credits > 0;
-    const label = isPreviewing ? tr("previewing") : isActive ? tr("active") : isUnlocked ? tr("apply") : tr("preview");
-    const action = isUnlocked ? "apply-skin" : "preview-skin";
+    const label = isPreviewing ? tr("previewing") : isActive ? tr("active") : tr("apply");
 
     const thumbnail = skin.id === "default"
       ? `<img class="skin-logo" src="assets/icon128.png" alt="">`
-      : `<span>${skin.code}</span>`;
+      : `
+        ${renderSkinFlag(skin, "skin-flag")}
+        <span>${skin.code}</span>
+      `;
 
     return `
       <article class="skin-card ${isActive || isSelected ? "is-selected" : ""}">
@@ -517,70 +907,31 @@ function renderSkins() {
           <p class="skin-team">${skin.team}</p>
           <h3>${skin.name}</h3>
           <p>${skin.motif}</p>
+          ${renderLandmarkBadge(skin, "skin-landmark")}
           ${renderSkinSymbols(skin, "skin-symbols compact")}
         </div>
         <div class="skin-card-actions">
-          <button class="skin-action ${isActive || isPreviewing ? "is-on" : ""}" type="button" data-${action}="${skin.id}">
+          <button class="skin-action ${isActive || isPreviewing ? "is-on" : ""}" type="button" data-apply-skin="${skin.id}">
             ${label}
           </button>
-          ${canUseCredit ? `<button class="skin-price" type="button" data-redeem-skin="${skin.id}" aria-label="${escapeAttribute(tr("useCreditAria", { skin: skin.name }))}">${tr("useCredit")}</button>` : ""}
-          ${!isUnlocked && !canUseCredit ? `<button class="skin-price" type="button" data-buy-skin="${skin.id}" aria-label="${escapeAttribute(tr("unlockSkinAria", { skin: skin.name }))}">$0.99</button>` : ""}
-          ${isUnlocked ? `<span class="owned-label">${tr("owned")}</span>` : ""}
         </div>
       </article>
     `;
   }).join("") || `<div class="skin-empty"><strong>${tr("noThemesTitle")}</strong><span>${tr("noThemesCopy")}</span></div>`;
 }
 
-function renderPurchaseStatus() {
-  if (!elements.purchaseStatus) return;
-
-  const entitlement = appState.entitlementCache;
-  const statusParts = [];
-
-  if (appState.purchaseStatus === PURCHASE_STATUS.pending) {
-    statusParts.push(tr("checkoutPending"));
-  } else if (appState.purchaseStatus === PURCHASE_STATUS.paid) {
-    statusParts.push(tr("purchaseReceived"));
-  } else if (appState.purchaseStatus === PURCHASE_STATUS.restored) {
-    const hasUnlock = hasUnlockedEntitlements(entitlement);
-    if (hasUnlock) {
-      statusParts.push(tr("purchasesRestored"));
-    } else {
-      statusParts.push(tr("noPurchasesFound"));
-    }
-  } else if (appState.purchaseStatus === PURCHASE_STATUS.error) {
-    statusParts.push(tr("checkoutCouldNotStart"));
-  } else {
-    statusParts.push(tr("purchaseDefault"));
-  }
-
-  if (entitlement.credits > 0) {
-    statusParts.push(entitlement.credits === 1
-      ? tr("creditRemainingOne")
-      : tr("creditRemainingMany", { count: entitlement.credits }));
-  }
-
-  elements.purchaseStatus.textContent = statusParts.join(" ");
-
-  if (elements.licenseSupport) {
-    const licenseId = appState.licenseId || "";
-    const shortCode = licenseId ? `${licenseId.slice(0, 8)}...${licenseId.slice(-6)}` : tr("unavailable");
-    elements.licenseSupport.textContent = tr("supportCode", { code: shortCode });
-    elements.licenseSupport.title = licenseId;
-  }
-}
-
 function renderAll() {
   applyLocaleDocumentState();
   renderStaticTranslations();
   renderLanguageMenu();
+  renderLanguageDockState();
   renderDataStatus();
   renderHero();
   renderMatches();
+  renderBracket();
+  renderPinnedPanel();
   renderThemeStage();
   renderSkins();
-  renderPurchaseStatus();
   bindFlagFallbacks();
 }
 
@@ -593,85 +944,6 @@ function showToast(message) {
   document.body.append(toast);
   requestAnimationFrame(() => toast.classList.add("is-visible"));
   setTimeout(() => toast.remove(), 3200);
-}
-
-function startCheckout(itemType, itemId) {
-  const offer = itemType === "bundle" && itemId === "all"
-    ? getOffer("skins_all_2026")
-    : itemType === "bundle" && itemId === "five"
-      ? getOffer("skin_five")
-      : getOffer("skin_single");
-
-  const payload = {
-    type: "START_CHECKOUT",
-    sku: offer.sku,
-    skinId: itemType === "skin" ? itemId : null,
-  };
-
-  setPurchaseStatus(PURCHASE_STATUS.pending, { sku: offer.sku, skinId: payload.skinId }).then((nextState) => {
-    appState = nextState;
-    renderPurchaseStatus();
-  });
-
-  sendRuntimeMessage(payload).then((result) => {
-    if (!result?.ok) {
-      setPurchaseStatus(PURCHASE_STATUS.error, { sku: offer.sku, reason: result?.error || "checkout_start_failed" }).then((nextState) => {
-        appState = nextState;
-        renderPurchaseStatus();
-      });
-      showToast(tr("checkoutFailedToast"));
-    }
-  });
-  showToast(tr("openingCheckoutToast", { offer: offer.label }));
-}
-
-async function restorePurchases() {
-  appState = await setPurchaseStatus(PURCHASE_STATUS.pending, { restore: true });
-  renderPurchaseStatus();
-  const result = await sendRuntimeMessage({ type: "RESTORE_PURCHASES" });
-  if (!result || result.ok === false) {
-    appState = await setPurchaseStatus(PURCHASE_STATUS.error, {
-      restore: true,
-      reason: result?.error || "restore_failed",
-    });
-    renderPurchaseStatus();
-    showToast(tr("restoreFailedToast"));
-    return;
-  }
-
-  if (result.entitlements) {
-    appState = await setEntitlements(result.entitlements, PURCHASE_STATUS.restored);
-  } else {
-    appState = await loadState();
-  }
-  renderAll();
-  if (result?.ok && hasUnlockedEntitlements(appState.entitlementCache)) {
-    showToast(tr("restoredToast"));
-    return;
-  }
-
-  showToast(tr("noActivePurchasesToast"));
-}
-
-async function redeemSkinCredit(skinId) {
-  appState = await setPurchaseStatus(PURCHASE_STATUS.pending, { redeemSkinId: skinId });
-  renderPurchaseStatus();
-  const result = await sendRuntimeMessage({ type: "REDEEM_SKIN", skinId });
-  if (!result || !result.ok) {
-    appState = await setPurchaseStatus(PURCHASE_STATUS.error, {
-      redeemSkinId: skinId,
-      reason: result?.error || "redeem_failed",
-    });
-    renderPurchaseStatus();
-    showToast(tr("redeemFailedToast"));
-    return;
-  }
-
-  appState = result.entitlements
-    ? await setEntitlements(result.entitlements, PURCHASE_STATUS.restored)
-    : await loadState();
-  renderAll();
-  showToast(tr("skinUnlockedToast"));
 }
 
 async function refreshLiveData({ announce = false } = {}) {
@@ -717,6 +989,7 @@ elements.tabs.forEach((tab) => {
 });
 
 document.addEventListener("click", async (event) => {
+  const languageCollapse = event.target.closest("#languageCollapse");
   const languageToggle = event.target.closest("#languageToggle");
   const languageOption = event.target.closest("[data-language-option]");
   const watchButton = event.target.closest("[data-watch]");
@@ -724,9 +997,11 @@ document.addEventListener("click", async (event) => {
   const applyButton = event.target.closest("[data-apply-skin]");
   const previewButton = event.target.closest("[data-preview-skin]");
   const cancelPreviewButton = event.target.closest("[data-cancel-preview]");
-  const buyButton = event.target.closest("[data-buy-skin]");
-  const redeemButton = event.target.closest("[data-redeem-skin]");
-  const bundleButton = event.target.closest("[data-bundle]");
+
+  if (languageCollapse) {
+    setLanguageDockCollapsed(!isLanguageDockCollapsed);
+    return;
+  }
 
   if (languageToggle) {
     setLanguageMenuOpen(elements.languageMenu?.hidden ?? true);
@@ -780,39 +1055,13 @@ document.addEventListener("click", async (event) => {
     applySkin(appState.activeSkinId);
     renderAll();
   }
-
-  if (buyButton) {
-    startCheckout("skin", buyButton.dataset.buySkin);
-  }
-
-  if (redeemButton) {
-    await redeemSkinCredit(redeemButton.dataset.redeemSkin);
-  }
-
-  if (bundleButton) {
-    startCheckout("bundle", bundleButton.dataset.bundle);
-  }
 });
 
 elements.favoritesOnly.addEventListener("change", renderMatches);
 elements.refreshButton.addEventListener("click", () => refreshLiveData({ announce: true }));
-elements.skinSearch.addEventListener("input", renderSkins);
-elements.skinFilter.addEventListener("change", renderSkins);
-elements.restoreButton?.addEventListener("click", restorePurchases);
-elements.copyLicenseButton?.addEventListener("click", async () => {
-  const licenseId = appState.licenseId || "";
-  if (!licenseId) {
-    showToast(tr("supportCodeUnavailableToast"));
-    return;
-  }
-
-  try {
-    await navigator.clipboard.writeText(licenseId);
-    showToast(tr("supportCodeCopiedToast"));
-  } catch {
-    showToast(tr("copySupportFailedToast"));
-  }
-});
+if (elements.skinSearch) {
+  elements.skinSearch.addEventListener("input", renderSkins);
+}
 
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {

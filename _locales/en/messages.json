@@ -1,0 +1,14 @@
+{
+  "extensionName": {
+    "message": "Live Scoreboard",
+    "description": "Extension name shown in Chrome and the Chrome Web Store."
+  },
+  "extensionDescription": {
+    "message": "Live soccer scores, pinned matches, World Cup bracket tracking, language support, and country skins.",
+    "description": "Short extension summary shown in Chrome and the Chrome Web Store."
+  },
+  "extensionActionTitle": {
+    "message": "Open Live Scoreboard",
+    "description": "Toolbar button title."
+  }
+}

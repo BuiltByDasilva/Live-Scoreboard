@@ -1,0 +1,14 @@
+{
+  "extensionName": {
+    "message": "Live Scoreboard",
+    "description": "Extension name shown in Chrome and the Chrome Web Store."
+  },
+  "extensionDescription": {
+    "message": "نتائج مباشرة، مباريات مثبتة، مسار كأس العالم، لغات وسمات البلدان.",
+    "description": "Short extension summary shown in Chrome and the Chrome Web Store."
+  },
+  "extensionActionTitle": {
+    "message": "فتح Live Scoreboard",
+    "description": "Toolbar button title."
+  }
+}

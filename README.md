@@ -1,6 +1,6 @@
 # Live Scoreboard
 
-Live Scoreboard is an original Chrome Manifest V3 extension for glanceable football scores. It keeps the selected live score visible on the Chrome toolbar, opens a detailed side panel, supports upcoming-match reminders, and includes original country-inspired skins for all 48 teams.
+Live Scoreboard is an original Chrome Manifest V3 extension for glanceable football scores. It keeps the selected live score visible on the Chrome toolbar, opens a detailed side panel, supports upcoming-match reminders, tracks the World Cup knockout bracket, and includes original country-inspired skins for all 48 teams.
 
 This MVP intentionally avoids official logos, official event marks, team federation crests, jersey replicas, copied store text, copied screenshots, and any claim of official affiliation.
 
@@ -12,11 +12,14 @@ This MVP intentionally avoids official logos, official event marks, team federat
 - Complete 104-match schedule with live data refreshed every 30 seconds
 - Last-known-good caching and a bundled public-domain offline schedule
 - Watchlist buttons for upcoming games
+- Interactive knockout bracket tab with horizontally scrollable rounds
+- Eliminated-team remembrance section
 - Background reminder checks for watched upcoming games
 - Local Chrome storage for settings
+- Classic matchday print and futuristic neon scoreboard skins
 - 48 original country-inspired skins with unique motifs, patterns, palettes, and cultural design notes
-- Skin search, owned/locked filters, active-theme preview, and `$0.99` / `$2.99` / `$9.99` purchase surfaces
-- No page-reading permissions; narrowly scoped host permissions for the live scoreboard feed and the payment entitlement API
+- Skin search, active-theme preview, and open themes for all users
+- No page-reading permissions; host permissions only for the live scoreboard feed
 
 ## Load locally
 
@@ -49,12 +52,18 @@ For long-term production use, obtain written commercial-use approval for the liv
 Recommended follow-ups:
 
 - Licensed live-score API via the existing provider adapter and a small backend proxy so API keys are not exposed in the extension.
-- Ongoing live-mode Stripe checkout checks to verify webhook fulfillment.
-- Refund and support instructions for paid skin packs.
 - Broader QA in Chrome stable, Edge, and at narrow side-panel widths.
 
 ## Theme art direction
 
-Each premium skin is an original visual system rather than a recolor. Themes use abstract cultural inspiration such as paper craft, landscape, tile geometry, weaving, gardens, music, and waterways. They do not include official federation crests, tournament marks, trophy artwork, kit replicas, copyrighted mascots, or claims of endorsement.
+Each theme is an original visual system rather than a recolor. Skins use abstract cultural inspiration such as paper craft, landscape, tile geometry, weaving, gardens, music, and waterways. They do not include official federation crests, tournament marks, trophy artwork, kit replicas, copyrighted mascots, or claims of endorsement.
 
-Stripe Checkout, Supabase Edge Functions, and server-side entitlement records are connected for live-mode payments. Purchases should be checked periodically with end-to-end checkout and restore flows.
+There is no paid flow in this release. All themes are available for free and apply directly from the Skins tab.
+
+## 2.0.0 release assets
+
+Release copy lives in `STORE_LISTING_DRAFT.md`.
+
+Privacy copy lives in `PRIVACY_POLICY.md`.
+
+Chrome Web Store media lives in `promo-video/store-listing-assets/`, including the 128x128 store icon, five global 1280x800 screenshots, localized screenshots, the 440x280 small promo tile, the 1400x560 marquee tile, and the generated promo video source.

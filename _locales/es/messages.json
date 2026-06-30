@@ -1,0 +1,14 @@
+{
+  "extensionName": {
+    "message": "Live Scoreboard",
+    "description": "Extension name shown in Chrome and the Chrome Web Store."
+  },
+  "extensionDescription": {
+    "message": "Marcadores en vivo, partidos fijados, llaves del Mundial, idiomas y temas de paises.",
+    "description": "Short extension summary shown in Chrome and the Chrome Web Store."
+  },
+  "extensionActionTitle": {
+    "message": "Abrir Live Scoreboard",
+    "description": "Toolbar button title."
+  }
+}

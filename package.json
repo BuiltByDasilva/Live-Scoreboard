@@ -1,6 +1,6 @@
 {
   "name": "live-scoreboard-extension",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -8,6 +8,6 @@
     "test": "node scripts/test-live-data.mjs",
     "check:live": "node scripts/check-live-feed.mjs",
     "media": "node scripts/generate-release-media.mjs",
-    "package": "rm -f live-scoreboard-extension.zip && zip -r -X live-scoreboard-extension.zip manifest.json sidepanel.html styles.css service-worker.js src assets/data assets/flags assets/icon16.png assets/icon32.png assets/icon48.png assets/icon128.png"
+    "package": "rm -f live-scoreboard-extension.zip && zip -r -X live-scoreboard-extension.zip manifest.json _locales sidepanel.html styles.css service-worker.js src assets/data assets/flags assets/soccer-ball.svg assets/store-soccer-ball-icon.svg assets/icon16.png assets/icon32.png assets/icon48.png assets/icon128.png"
   }
 }

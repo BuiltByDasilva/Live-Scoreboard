@@ -11,75 +11,109 @@ const framesDir = join(mediaDir, "frames");
 const swiftCache = "/tmp/live-scoreboard-swift-cache";
 
 const sources = {
-  live: "source-extension-live-440x760.png",
-  watchlist: "source-extension-watchlist-440x760.png",
-  skins: "source-extension-skins-brazil-top-440x760.png",
-  language: "source-extension-language-440x760.png",
-  mobile: "source-extension-mobile-320x720.png",
+  live: "source-extension-live-2-0-440x760.png",
+  watchlist: "source-extension-watchlist-2-0-440x760.png",
+  bracket: "source-extension-bracket-2-0-440x760.png",
+  skins: "source-extension-skins-2-0-440x760.png",
+  language: "source-extension-language-2-0-440x760.png",
+  mobile: "source-extension-mobile-2-0-320x720.png",
 };
 
 const storeSlides = [
   {
-    file: "01-live-scoreboard-1-0.png",
-    title: "Live Scoreboard 1.0",
-    subtitle: "Poster-style football scores for Chrome.",
+    file: "01-live-scoreboard-2-0.png",
+    title: "Live Scoreboard 2.0",
+    subtitle: "Miami-neon football scores for Chrome.",
     source: sources.live,
     accent: "#00eaff",
   },
   {
-    file: "02-watchlist-reminders-1-0.png",
-    title: "Watchlist Reminders",
-    subtitle: "Save games, pin scores, and track kickoff.",
+    file: "02-pinned-watchlist-2-0.png",
+    title: "Pinned Match Focus",
+    subtitle: "Pin a match and keep the toolbar score alive.",
     source: sources.watchlist,
+    accent: "#ff4fa3",
+  },
+  {
+    file: "03-world-cup-bracket-2-0.png",
+    title: "Interactive Bracket",
+    subtitle: "Follow every knockout path and elimination.",
+    source: sources.bracket,
+    accent: "#ffd166",
+  },
+  {
+    file: "04-country-skins-2-0.png",
+    title: "Classic + Futuristic Skins",
+    subtitle: "Country pride with artistic theme switching.",
+    source: sources.skins,
     accent: "#aee016",
   },
   {
-    file: "03-country-skins-1-0.png",
-    title: "Country Skin Packs",
-    subtitle: "Premium themes reshape the entire app.",
-    source: sources.skins,
-    accent: "#f36b16",
-  },
-  {
-    file: "04-language-support-1-0.png",
-    title: "Five Key Languages",
-    subtitle: "English, Spanish, Portuguese, Arabic, French.",
+    file: "05-global-language-2-0.png",
+    title: "Global Match Day",
+    subtitle: "English, Spanish, Portuguese, Arabic, and French.",
     source: sources.language,
     accent: "#00eaff",
-  },
-  {
-    file: "05-mobile-panel-1-0.png",
-    title: "Responsive Panel",
-    subtitle: "Readable, compact, and full of energy.",
-    source: sources.mobile,
-    accent: "#f7e9bd",
   },
 ];
 
 const videoSlides = [
   {
-    title: "Live Scoreboard 1.0",
-    subtitle: "World Cup style live scores for Chrome.",
+    title: "Live Scoreboard 2.0",
+    subtitle: "Miami-neon live scores for Chrome.",
     source: sources.live,
     accent: "#00eaff",
   },
   {
-    title: "Pin the score. Watch the match.",
-    subtitle: "The toolbar icon now reflects the active matchup.",
+    title: "Pin the game.",
+    subtitle: "The toolbar ball shows live score status while you browse.",
     source: sources.watchlist,
+    accent: "#ff4fa3",
+  },
+  {
+    title: "Follow the bracket.",
+    subtitle: "Knockout rounds, advancement paths, and a remembrance section.",
+    source: sources.bracket,
+    accent: "#ffd166",
+  },
+  {
+    title: "Choose your scoreboard.",
+    subtitle: "Classic matchday print or futuristic neon, plus country skins.",
+    source: sources.skins,
+    accent: "#aee016",
+  },
+];
+
+const localizedSlides = [
+  {
+    locale: "en",
+    title: "Live Scoreboard 2.0",
+    subtitle: "Live scores, bracket tracking, country skins, and pinned match focus.",
+    accent: "#00eaff",
+  },
+  {
+    locale: "es",
+    title: "Marcador en Vivo 2.0",
+    subtitle: "Resultados, llaves, temas de paises y partido fijado.",
+    accent: "#ffd166",
+  },
+  {
+    locale: "pt_BR",
+    title: "Placar Ao Vivo 2.0",
+    subtitle: "Resultados, chaveamento, temas de paises e jogo fixado.",
     accent: "#aee016",
   },
   {
-    title: "Premium skins feel premium.",
-    subtitle: "Country-inspired palettes, animals, folklore, and fruit motifs reshape the app.",
-    source: sources.skins,
-    accent: "#f36b16",
+    locale: "fr",
+    title: "Scores en Direct 2.0",
+    subtitle: "Scores, tableau, themes de pays et match epingle.",
+    accent: "#00eaff",
   },
   {
-    title: "Ready for a global audience.",
-    subtitle: "Fast language switching and polished store-ready visuals.",
-    source: sources.language,
-    accent: "#00eaff",
+    locale: "ar",
+    title: "لوحة النتائج 2.0",
+    subtitle: "نتائج مباشرة ومسار البطولة وسمات البلدان ومباراة مثبتة.",
+    accent: "#ff4fa3",
   },
 ];
 
@@ -127,6 +161,7 @@ function posterSvg({ width, height, title, subtitle, imageData, accent, compact 
 
 async function svgToPng(svg, outPath) {
   const tempSvg = `${outPath}.svg`;
+  await rm(outPath, { force: true });
   await writeFile(tempSvg, svg);
   try {
     await execFileAsync("sips", ["-s", "format", "png", tempSvg, "--out", outPath]);
@@ -142,11 +177,20 @@ async function generateStoreImages() {
     await svgToPng(svg, join(storeDir, slide.file));
   }
 
+  const localizedDir = join(storeDir, "localized");
+  await mkdir(localizedDir, { recursive: true });
+
+  for (const slide of localizedSlides) {
+    const imageData = await dataUri(sources.live);
+    const svg = posterSvg({ width: 1280, height: 800, imageData, ...slide });
+    await svgToPng(svg, join(localizedDir, `${slide.locale}-live-scoreboard-2-0.png`));
+  }
+
   await svgToPng(posterSvg({
     width: 1400,
     height: 560,
-    title: "Live Scoreboard 1.0",
-    subtitle: "Poster-style live scores and premium country skins.",
+    title: "Live Scoreboard 2.0",
+    subtitle: "Live scores, bracket tracking, country skins, and pinned match focus.",
     imageData: await dataUri(sources.live),
     accent: "#00eaff",
   }), join(storeDir, "marquee-promo-1400x560.png"));
@@ -155,7 +199,7 @@ async function generateStoreImages() {
     width: 440,
     height: 280,
     title: "Live Scoreboard",
-    subtitle: "World Cup style scores",
+    subtitle: "Scores + bracket",
     imageData: await dataUri(sources.live),
     accent: "#00eaff",
     compact: true,
